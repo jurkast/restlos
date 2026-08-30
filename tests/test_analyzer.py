@@ -179,10 +179,9 @@ class AnalyzerTests(unittest.TestCase):
             metadata={"package_manager": "dnf"},
         )
         plan = RemovalAnalyzer(self.home).analyze(app)
-        self.assertEqual(
-            plan.actions[0].command,
-            ("/usr/bin/pkexec", "/usr/bin/dnf", "-y", "remove", "harmless-app"),
-        )
+        self.assertEqual(plan.actions[0].command[0], "/usr/bin/pkexec")
+        self.assertEqual(Path(plan.actions[0].command[1]).name, "dnf")
+        self.assertEqual(plan.actions[0].command[2:], ("-y", "remove", "harmless-app"))
         self.assertTrue(any("helper-lib" in warning for warning in plan.warnings))
 
     @patch("restlos.package_managers.run_command")

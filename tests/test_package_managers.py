@@ -93,7 +93,10 @@ class PackageManagerTests(unittest.TestCase):
     def test_native_adapter_prefers_zypper_over_dnf_on_rpm_system(self, which) -> None:
         available = {"rpm", "zypper", "dnf"}
         which.side_effect = lambda name: f"/usr/bin/{name}" if name in available else None
-        self.assertIsInstance(native_package_adapter(), ZypperAdapter)
+        with tempfile.TemporaryDirectory() as temporary:
+            os_release = Path(temporary) / "os-release"
+            os_release.write_text('ID="unknown"\n', encoding="utf-8")
+            self.assertIsInstance(native_package_adapter(os_release), ZypperAdapter)
 
     @patch("restlos.package_managers.shutil.which")
     def test_os_release_wins_when_multiple_managers_exist(self, which) -> None:
