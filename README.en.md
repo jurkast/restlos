@@ -18,6 +18,7 @@ Restlos is a graphical application remover for the major Linux distribution fami
 - complete Bottles environments and PlayOnLinux prefixes
 - portable applications and unassigned Wine prefixes in `Games` and `Applications`
 - launcher-managed game libraries on additional drives
+- automatic daily release checks with an explicitly confirmed, verified in-app update
 
 For supported games, Restlos can include game folders, dedicated prefixes, manifests, workshop content, shader caches, local saves, screenshots, cover art, launchers and settings. Shared launcher directories and the default Wine prefix remain protected.
 
@@ -34,14 +35,14 @@ Flatpak, Snap, AppImage, Wine and game-platform detection are independent of the
 
 ## Install
 
-Download the latest package from [GitHub Releases](https://github.com/jurkastl/restlos/releases). For version 1.2.0:
+Download the latest package from [GitHub Releases](https://github.com/jurkastl/restlos/releases). For version 1.3.0:
 
 ```bash
-curl -LO https://github.com/jurkastl/restlos/releases/download/v1.2.0/Restlos-1.2.0.tar.gz
-curl -LO https://github.com/jurkastl/restlos/releases/download/v1.2.0/Restlos-1.2.0.sha256
-sha256sum --check Restlos-1.2.0.sha256
-tar -xzf Restlos-1.2.0.tar.gz
-cd Restlos-1.2.0
+curl -LO https://github.com/jurkastl/restlos/releases/download/v1.3.0/Restlos-1.3.0.tar.gz
+curl -LO https://github.com/jurkastl/restlos/releases/download/v1.3.0/Restlos-1.3.0.sha256
+sha256sum --check Restlos-1.3.0.sha256
+tar -xzf Restlos-1.3.0.tar.gz
+cd Restlos-1.3.0
 ./install.sh
 ```
 
@@ -62,6 +63,12 @@ sudo zypper install python3-gobject typelib-1_0-Gtk-4_0 polkit
 ```
 
 Restlos is then available from the application menu or as `~/.local/bin/restlos`.
+
+## Updates
+
+By default, Restlos checks the public GitHub release metadata no more than once per day when it starts. When a newer version is available, it shows the release notes and waits for explicit confirmation. The archive is accepted only after its version, asset names, trusted URLs, size, GitHub digest and published SHA-256 checksum have been validated. Installation uses a new version directory, leaving the previous version startable if anything fails.
+
+Automatic checks can be disabled from the application menu, and a manual check can be started there at any time. No update is installed silently.
 
 ## Safety model
 

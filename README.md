@@ -30,6 +30,7 @@ Restlos ist ein grafischer App-Deinstaller für die großen Linux-Distributionsf
 - unterstützt dauerhafte Löschung oder den Papierkorb
 - schreibt ein minimales Ergebnisprotokoll nach `~/.local/state/restlos/history`
 - bietet zusätzlich eine Terminaloberfläche für Listen und Löschpläne
+- sucht beim Start höchstens einmal täglich nach neuen Releases und bietet geprüfte Updates nach Bestätigung direkt an
 
 Restlos zeigt bewusst **Anwendungen, Spiele und eigenständige Programmumgebungen** und keine Tausenden Bibliotheks- oder Kernelpakete an.
 
@@ -46,14 +47,14 @@ Flatpak, Snap, AppImage, Wine sowie die Spieleplattformen funktionieren unabhän
 
 ## Installation
 
-Die aktuelle Ausgabe von der [Release-Seite](https://github.com/jurkastl/restlos/releases) herunterladen. Für Version 1.2.0 geht es auch vollständig im Terminal:
+Die aktuelle Ausgabe von der [Release-Seite](https://github.com/jurkastl/restlos/releases) herunterladen. Für Version 1.3.0 geht es auch vollständig im Terminal:
 
 ```bash
-curl -LO https://github.com/jurkastl/restlos/releases/download/v1.2.0/Restlos-1.2.0.tar.gz
-curl -LO https://github.com/jurkastl/restlos/releases/download/v1.2.0/Restlos-1.2.0.sha256
-sha256sum --check Restlos-1.2.0.sha256
-tar -xzf Restlos-1.2.0.tar.gz
-cd Restlos-1.2.0
+curl -LO https://github.com/jurkastl/restlos/releases/download/v1.3.0/Restlos-1.3.0.tar.gz
+curl -LO https://github.com/jurkastl/restlos/releases/download/v1.3.0/Restlos-1.3.0.sha256
+sha256sum --check Restlos-1.3.0.sha256
+tar -xzf Restlos-1.3.0.tar.gz
+cd Restlos-1.3.0
 ./install.sh
 ```
 
@@ -95,16 +96,20 @@ restlos remove "Programmname" --yes --trash
 
 ## Updates
 
-Der Installer ist versionsbasiert und kann jederzeit erneut ausgeführt werden. Eine neue lokale Ausgabe wird so installiert:
+Restlos fragt beim Programmstart standardmäßig höchstens einmal täglich die öffentlichen GitHub-Release-Metadaten ab. Ist eine neue Ausgabe vorhanden, erscheint eine Meldung mit Änderungshinweisen. Erst nach einem Klick auf **Herunterladen und installieren** wird das Archiv geladen, anhand des GitHub-Digests und der veröffentlichten SHA-256-Prüfsumme kontrolliert und in ein neues Versionsverzeichnis installiert. Die bisherige Version bleibt bei einem Fehler startfähig.
+
+Unter **Menü → Automatisch nach Updates suchen** lässt sich die Startprüfung abschalten. **Menü → Nach Updates suchen …** prüft unabhängig vom Zeitintervall sofort. Restlos installiert keine Aktualisierung ohne ausdrückliche Bestätigung.
+
+Der Installer ist weiterhin versionsbasiert und kann auch manuell ausgeführt werden. Eine neue lokale Ausgabe wird so installiert:
 
 ```bash
-./update.sh /pfad/zu/Restlos-1.2.0.tar.gz
+./update.sh /pfad/zu/Restlos-1.3.0.tar.gz
 ```
 
 Für ein über HTTPS geladenes Release ist eine bekannte SHA-256-Prüfsumme Pflicht:
 
 ```bash
-./update.sh 'https://github.com/jurkastl/restlos/releases/download/v1.2.0/Restlos-1.2.0.tar.gz' '64-stellige-sha256-prüfsumme'
+./update.sh 'https://github.com/jurkastl/restlos/releases/download/v1.3.0/Restlos-1.3.0.tar.gz' '64-stellige-sha256-prüfsumme'
 ```
 
 Updates werden zuerst in ein neues Versionsverzeichnis kopiert und geprüft. Erst danach wird der `current`-Symlink atomar umgeschaltet. Einstellungen und Entfernungshistorie bleiben erhalten.

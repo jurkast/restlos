@@ -1,5 +1,16 @@
 # Änderungsprotokoll
 
+## 1.3.0 – 2026-08-30
+
+- automatische, standardmäßig höchstens einmal täglich ausgeführte Suche nach neuen GitHub-Releases beim Programmstart
+- abschaltbare automatische Suche und jederzeit ausführbare manuelle Prüfung im Anwendungsmenü
+- grafische Update-Meldung mit installierter und verfügbarer Version sowie den veröffentlichten Änderungshinweisen
+- ausdrücklich bestätigter Download mit sichtbarer Fortschrittsanzeige und anschließendem Neustartangebot
+- strikte Prüfung von Release-Tag, Asset-Namen, Download-Adressen, Dateigröße, GitHub-Digest und veröffentlichter SHA-256-Prüfsumme
+- sichere Archivextraktion mit Pfad-, Größen- und Dateitypgrenzen; Links und Spezialdateien werden abgelehnt
+- atomare Installation in ein neues Versionsverzeichnis, sodass die bisherige Ausgabe bei Fehlern startfähig bleibt
+- transparente Datenschutzangabe für die sparsame GitHub-Abfrage; keine Telemetrie oder Übertragung lokaler Anwendungsdaten
+
 ## 1.2.0 – 2026-08-30
 
 - native Paketmanager-Adapter für DNF/RPM auf Fedora-/RHEL-Systemen, pacman auf Arch-basierten Systemen und Zypper/RPM auf openSUSE

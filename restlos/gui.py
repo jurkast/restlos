@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import threading
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from .analyzer import RemovalAnalyzer
 from .models import AppRecord, Confidence, RemovalPlan, RemovalResult, SourceKind
 from .remover import RemovalExecutor
 from .scanners import ApplicationScanner
+from .updater import ReleaseInfo, UpdateClient, UpdateError, UpdateState
 from .utils import format_size
 
 
@@ -165,7 +167,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
         menu = Gio.Menu()
         menu.append("Protokollordner öffnen", "app.open-history")
-        menu.append("Update-Hilfe", "app.update-help")
+        menu.append("Nach Updates suchen …", "app.check-updates")
+        menu.append("Automatisch nach Updates suchen", "app.automatic-updates")
         menu.append("Über Restlos", "app.about")
         menu_button = Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu)
         header.pack_end(menu_button)
@@ -677,6 +680,12 @@ class MainWindow(Gtk.ApplicationWindow):
 class RestlosApplication(Gtk.Application):
     def __init__(self) -> None:
         super().__init__(application_id=APP_ID, flags=Gio.ApplicationFlags.DEFAULT_FLAGS)
+        self.update_state = UpdateState()
+        self._update_check_running = False
+        self._update_install_running = False
+        self._update_progress_dialog: Gtk.Dialog | None = None
+        self._update_progress_label: Gtk.Label | None = None
+        self._update_progress_bar: Gtk.ProgressBar | None = None
         self.connect("activate", self._activate)
         self._add_actions()
 
@@ -685,16 +694,24 @@ class RestlosApplication(Gtk.Application):
         if window is None:
             window = MainWindow(self)
         window.present()
+        self._start_update_check(automatic=True)
 
     def _add_actions(self) -> None:
         for name, callback in (
             ("about", self._show_about),
             ("open-history", self._open_history),
-            ("update-help", self._show_update_help),
+            ("check-updates", self._check_updates_manually),
         ):
             action = Gio.SimpleAction.new(name, None)
             action.connect("activate", callback)
             self.add_action(action)
+        automatic = Gio.SimpleAction.new_stateful(
+            "automatic-updates",
+            None,
+            GLib.Variant.new_boolean(self.update_state.automatic_checks_enabled()),
+        )
+        automatic.connect("change-state", self._change_automatic_updates)
+        self.add_action(automatic)
 
     def _show_about(self, _action, _parameter) -> None:
         dialog = Gtk.AboutDialog(
@@ -715,18 +732,224 @@ class RestlosApplication(Gtk.Application):
         path.mkdir(parents=True, exist_ok=True)
         Gio.AppInfo.launch_default_for_uri(path.as_uri(), None)
 
-    def _show_update_help(self, _action, _parameter) -> None:
-        window = self.props.active_window
+    def _check_updates_manually(self, _action, _parameter) -> None:
+        self._start_update_check(automatic=False)
+
+    def _change_automatic_updates(self, action: Gio.SimpleAction, value: GLib.Variant) -> None:
+        enabled = value.get_boolean()
+        self.update_state.set_automatic_checks(enabled)
+        action.set_state(value)
+        if enabled:
+            self._start_update_check(automatic=False)
+
+    def _start_update_check(self, *, automatic: bool) -> None:
+        if self._update_check_running or self._update_install_running:
+            return
+        if automatic and not self.update_state.is_due():
+            return
+        self._update_check_running = True
+        action = self.lookup_action("check-updates")
+        if action is not None:
+            action.set_enabled(False)
+
+        def worker() -> None:
+            try:
+                release = UpdateClient(__version__).check()
+                self.update_state.record_attempt(True)
+                GLib.idle_add(self._update_check_finished, release, None, automatic)
+            except UpdateError as error:
+                self.update_state.record_attempt(False)
+                GLib.idle_add(self._update_check_finished, None, str(error), automatic)
+            except Exception as error:  # defensive boundary for the background worker
+                self.update_state.record_attempt(False)
+                GLib.idle_add(self._update_check_finished, None, str(error), automatic)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _update_check_finished(
+        self,
+        release: ReleaseInfo | None,
+        error: str | None,
+        automatic: bool,
+    ) -> bool:
+        self._update_check_running = False
+        action = self.lookup_action("check-updates")
+        if action is not None:
+            action.set_enabled(True)
+        if error:
+            if not automatic:
+                self._show_message(
+                    "Update-Suche fehlgeschlagen",
+                    error,
+                    Gtk.MessageType.ERROR,
+                )
+            return False
+        if release is None:
+            if not automatic:
+                self._show_message(
+                    "Restlos ist aktuell",
+                    f"Version {__version__} ist die neueste verfügbare Ausgabe.",
+                    Gtk.MessageType.INFO,
+                )
+            return False
+        self._show_update_available(release)
+        return False
+
+    def _show_update_available(self, release: ReleaseInfo) -> None:
+        notes = release.notes.strip()
+        if len(notes) > 1400:
+            notes = notes[:1397].rstrip() + " …"
+        details = (
+            f"Installiert: {__version__}\n"
+            f"Verfügbar: {release.version}\n\n"
+            f"{notes or 'Änderungen stehen auf der Release-Seite.'}\n\n"
+            "Das Update wird nur nach deiner Bestätigung geladen, per SHA-256 geprüft und atomar installiert."
+        )
         dialog = Gtk.MessageDialog(
-            transient_for=window,
+            transient_for=self.props.active_window,
             modal=True,
             message_type=Gtk.MessageType.INFO,
-            buttons=Gtk.ButtonsType.CLOSE,
-            text="Restlos aktualisieren",
+            buttons=Gtk.ButtonsType.NONE,
+            text=f"Restlos {release.version} ist verfügbar",
+            secondary_text=details,
+        )
+        dialog.add_button("Später", Gtk.ResponseType.CANCEL)
+        dialog.add_button("Release-Seite", Gtk.ResponseType.HELP)
+        install = dialog.add_button("Herunterladen und installieren", Gtk.ResponseType.ACCEPT)
+        install.add_css_class("suggested-action")
+        dialog.set_default_response(Gtk.ResponseType.ACCEPT)
+        dialog.connect("response", self._on_update_response, release)
+        dialog.present()
+
+    def _on_update_response(self, dialog: Gtk.MessageDialog, response: int, release: ReleaseInfo) -> None:
+        dialog.destroy()
+        if response == Gtk.ResponseType.HELP:
+            Gio.AppInfo.launch_default_for_uri(release.page_url, None)
+        elif response == Gtk.ResponseType.ACCEPT:
+            self._install_update(release)
+
+    def _install_update(self, release: ReleaseInfo) -> None:
+        if self._update_install_running:
+            return
+        self._update_install_running = True
+        action = self.lookup_action("check-updates")
+        if action is not None:
+            action.set_enabled(False)
+
+        dialog = Gtk.Dialog(
+            transient_for=self.props.active_window,
+            modal=True,
+            title=f"Restlos {release.version} installieren",
+        )
+        dialog.set_deletable(False)
+        content = dialog.get_content_area()
+        content.set_spacing(14)
+        content.set_margin_top(24)
+        content.set_margin_bottom(24)
+        content.set_margin_start(26)
+        content.set_margin_end(26)
+        spinner = Gtk.Spinner()
+        spinner.set_size_request(42, 42)
+        spinner.set_halign(Gtk.Align.CENTER)
+        spinner.start()
+        content.append(spinner)
+        label = Gtk.Label(label="Update wird vorbereitet …")
+        label.set_wrap(True)
+        label.set_max_width_chars(58)
+        content.append(label)
+        progress_bar = Gtk.ProgressBar()
+        progress_bar.set_size_request(460, -1)
+        content.append(progress_bar)
+        note = Gtk.Label(label="Das aktuelle Restlos bleibt bei einem Fehler weiterhin startfähig.")
+        note.add_css_class("muted")
+        content.append(note)
+        self._update_progress_dialog = dialog
+        self._update_progress_label = label
+        self._update_progress_bar = progress_bar
+        self.hold()
+        dialog.present()
+
+        def progress(message: str, fraction: float) -> None:
+            GLib.idle_add(self._set_update_progress, message, fraction)
+
+        def worker() -> None:
+            try:
+                result = UpdateClient(__version__).install(release, progress=progress)
+                GLib.idle_add(self._update_install_finished, result.version, None)
+            except UpdateError as error:
+                GLib.idle_add(self._update_install_finished, None, str(error))
+            except Exception as error:  # defensive boundary for the background worker
+                GLib.idle_add(self._update_install_finished, None, str(error))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _set_update_progress(self, message: str, fraction: float) -> bool:
+        if self._update_progress_label is not None:
+            self._update_progress_label.set_text(message)
+        if self._update_progress_bar is not None:
+            self._update_progress_bar.set_fraction(max(0.0, min(fraction, 1.0)))
+        return False
+
+    def _update_install_finished(self, version: str | None, error: str | None) -> bool:
+        self._update_install_running = False
+        action = self.lookup_action("check-updates")
+        if action is not None:
+            action.set_enabled(True)
+        if self._update_progress_dialog is not None:
+            self._update_progress_dialog.destroy()
+        self._update_progress_dialog = None
+        self._update_progress_label = None
+        self._update_progress_bar = None
+        self.release()
+        if error or version is None:
+            self._show_message(
+                "Update nicht installiert",
+                error or "Ein unbekannter Fehler ist aufgetreten.",
+                Gtk.MessageType.ERROR,
+            )
+            return False
+
+        dialog = Gtk.MessageDialog(
+            transient_for=self.props.active_window,
+            modal=True,
+            message_type=Gtk.MessageType.INFO,
+            buttons=Gtk.ButtonsType.NONE,
+            text=f"Restlos {version} wurde installiert",
             secondary_text=(
-                "Eine neue Ausgabe kann mit dem enthaltenen update.sh installiert werden. "
-                "Einstellungen und Entfernungshistorie bleiben erhalten; Programmdateien werden atomar ersetzt."
+                "Einstellungen und Entfernungshistorie wurden beibehalten. "
+                "Starte Restlos jetzt neu, damit die neue Version aktiv wird."
             ),
+        )
+        dialog.add_button("Später neu starten", Gtk.ResponseType.CLOSE)
+        restart = dialog.add_button("Jetzt neu starten", Gtk.ResponseType.ACCEPT)
+        restart.add_css_class("suggested-action")
+        dialog.set_default_response(Gtk.ResponseType.ACCEPT)
+        dialog.connect("response", self._on_restart_response)
+        dialog.present()
+        return False
+
+    def _on_restart_response(self, dialog: Gtk.MessageDialog, response: int) -> None:
+        dialog.destroy()
+        if response != Gtk.ResponseType.ACCEPT:
+            return
+        command = Path.home() / ".local/bin/restlos"
+        try:
+            os.execv(str(command), (str(command),))
+        except OSError as error:
+            self._show_message(
+                "Neustart fehlgeschlagen",
+                f"Starte Restlos manuell neu. Technisches Detail: {error}",
+                Gtk.MessageType.ERROR,
+            )
+
+    def _show_message(self, title: str, details: str, message_type: Gtk.MessageType) -> None:
+        dialog = Gtk.MessageDialog(
+            transient_for=self.props.active_window,
+            modal=True,
+            message_type=message_type,
+            buttons=Gtk.ButtonsType.CLOSE,
+            text=title,
+            secondary_text=details,
         )
         dialog.connect("response", lambda item, _response: item.destroy())
         dialog.present()

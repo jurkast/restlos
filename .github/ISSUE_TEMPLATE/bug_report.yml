@@ -19,7 +19,7 @@ body:
     id: system
     attributes:
       label: Linux-System
-      placeholder: "Zorin OS / Ubuntu-Version"
+      placeholder: "Distribution und Version, z. B. Fedora 43 oder Zorin OS 18"
     validations:
       required: true
   - type: textarea
