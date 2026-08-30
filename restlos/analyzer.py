@@ -6,8 +6,13 @@ import re
 from pathlib import Path
 
 from .models import AppRecord, Confidence, RemovalAction, RemovalPlan, RemovalTarget, SourceKind
-from .scanners import PACKAGE_ID_PATTERN
-from .utils import command_executable, extract_home_paths, is_within, normalize_key, path_size, run_command
+from .package_managers import (
+    NATIVE_PACKAGE_SOURCES,
+    PACKAGE_ID_PATTERN,
+    PackageManagerAdapter,
+    adapter_for_source,
+)
+from .utils import command_executable, extract_home_paths, is_within, normalize_key, path_size
 
 
 class UnsafeTargetError(ValueError):
@@ -186,17 +191,19 @@ class RemovalAnalyzer:
     def _add_managed_action(self, plan: RemovalPlan, app: AppRecord) -> bool:
         package = app.package_id
         if not PACKAGE_ID_PATTERN.fullmatch(package):
-            if app.source in {SourceKind.APT, SourceKind.FLATPAK, SourceKind.SNAP}:
+            if app.source in {*NATIVE_PACKAGE_SOURCES, SourceKind.FLATPAK, SourceKind.SNAP}:
                 plan.warnings.append("Die Paketkennung enthält unerlaubte Zeichen; die Paketaktion wurde blockiert.")
                 return True
             return False
-        if app.source == SourceKind.APT:
-            if self._apt_action_is_unsafe(plan, package):
+        adapter = adapter_for_source(app.source)
+        if adapter is not None:
+            manager_name = app.metadata.get("package_manager", "")
+            if self._native_action_is_unsafe(plan, adapter, package, manager_name):
                 return True
             plan.actions.append(
                 RemovalAction(
-                    label=f"APT-Paket „{package}“ vollständig entfernen (purge)",
-                    command=("/usr/bin/pkexec", "/usr/bin/apt-get", "purge", "-y", package),
+                    label=adapter.removal_label(package),
+                    command=adapter.removal_command(package, manager_name),
                     privileged=True,
                 )
             )
@@ -225,32 +232,34 @@ class RemovalAnalyzer:
             )
         return False
 
-    def _apt_action_is_unsafe(self, plan: RemovalPlan, package: str) -> bool:
-        simulation = run_command(("/usr/bin/apt-get", "-s", "purge", package), timeout=20)
-        if simulation.returncode != 0:
+    def _native_action_is_unsafe(
+        self,
+        plan: RemovalPlan,
+        adapter: PackageManagerAdapter,
+        package: str,
+        manager_name: str,
+    ) -> bool:
+        preview = adapter.preview_removal(package, manager_name)
+        if preview.error:
             plan.warnings.append(
-                "Die APT-Entfernung konnte nicht sicher simuliert werden. Die Paketaktion wurde vorsorglich blockiert."
+                f"{preview.error} Die Paketaktion wurde vorsorglich blockiert."
             )
             return True
-        removed = re.findall(r"^Remv\s+([^\s:]+)", simulation.stdout, flags=re.MULTILINE)
-        protected_prefixes = (
-            "zorin-os", "ubuntu-desktop", "ubuntu-minimal", "gnome-shell", "systemd",
-            "libc6", "linux-image", "linux-generic", "grub", "initramfs", "network-manager",
-            "python3-minimal", "apt", "dpkg", "sudo", "policykit", "polkit", "xorg",
-        )
-        critical = sorted({name for name in removed if name.startswith(protected_prefixes)})
+        removed = preview.removed_packages
+        critical = sorted({name for name in removed if adapter.is_protected(name)})
         if critical:
             plan.warnings.append(
-                "Entfernung blockiert: Die APT-Simulation würde wichtige Systemkomponenten entfernen: "
+                f"Entfernung blockiert: Die {adapter.source.value}-Simulation würde wichtige Systemkomponenten entfernen: "
                 + ", ".join(critical)
             )
             return True
         additional = sorted({name for name in removed if name != package})
         if additional:
-            preview = ", ".join(additional[:8])
+            additional_preview = ", ".join(additional[:8])
             suffix = " …" if len(additional) > 8 else ""
             plan.warnings.append(
-                f"APT wird zusätzlich {len(additional)} abhängige(s) Paket(e) entfernen: {preview}{suffix}"
+                f"{adapter.source.value} wird zusätzlich {len(additional)} abhängige(s) Paket(e) entfernen: "
+                f"{additional_preview}{suffix}"
             )
         return False
 

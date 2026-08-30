@@ -140,7 +140,7 @@ class AnalyzerTests(unittest.TestCase):
         self.assertNotIn(self.home / ".wine", paths)
         self.assertTrue(any("Standard-Wine-Präfix" in warning for warning in plan.warnings))
 
-    @patch("restlos.analyzer.run_command")
+    @patch("restlos.package_managers.run_command")
     def test_apt_action_is_blocked_when_simulation_removes_core_system(self, command) -> None:
         command.return_value = CommandResult(
             ("apt-get",),
@@ -158,6 +158,82 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(plan.actions, [])
         self.assertEqual(plan.targets, [])
         self.assertTrue(any("Systemkomponenten" in warning for warning in plan.warnings))
+
+    @patch("restlos.package_managers.run_command")
+    def test_dnf_action_uses_preview_and_trusted_command(self, command) -> None:
+        command.return_value = CommandResult(
+            ("dnf",),
+            1,
+            "Removing:\n"
+            " harmless-app x86_64 1.0 updates 1 M\n"
+            "Removing unused dependencies:\n"
+            " helper-lib noarch 2.0 updates 2 M\n"
+            "Transaction Summary\n",
+            "Operation aborted.\n",
+        )
+        app = AppRecord(
+            key="dnf:harmless-app",
+            name="Harmless App",
+            source=SourceKind.DNF,
+            package_id="harmless-app",
+            metadata={"package_manager": "dnf"},
+        )
+        plan = RemovalAnalyzer(self.home).analyze(app)
+        self.assertEqual(
+            plan.actions[0].command,
+            ("/usr/bin/pkexec", "/usr/bin/dnf", "-y", "remove", "harmless-app"),
+        )
+        self.assertTrue(any("helper-lib" in warning for warning in plan.warnings))
+
+    @patch("restlos.package_managers.run_command")
+    def test_pacman_action_is_blocked_for_core_dependency(self, command) -> None:
+        command.return_value = CommandResult(
+            ("pacman",),
+            0,
+            "harmless-app\nsystemd\n",
+            "",
+        )
+        app = AppRecord(
+            key="pacman:harmless-app",
+            name="Harmless App",
+            source=SourceKind.PACMAN,
+            package_id="harmless-app",
+            metadata={"package_manager": "pacman"},
+        )
+        plan = RemovalAnalyzer(self.home).analyze(app)
+        self.assertEqual(plan.actions, [])
+        self.assertTrue(any("systemd" in warning for warning in plan.warnings))
+
+    @patch("restlos.package_managers.run_command")
+    def test_zypper_action_uses_dry_run_result(self, command) -> None:
+        command.return_value = CommandResult(
+            ("zypper",),
+            0,
+            "The following 2 packages are going to be REMOVED:\n"
+            "  harmless-app helper-lib\n\n"
+            "2 packages to remove.\n",
+            "",
+        )
+        app = AppRecord(
+            key="zypper:harmless-app",
+            name="Harmless App",
+            source=SourceKind.ZYPPER,
+            package_id="harmless-app",
+            metadata={"package_manager": "zypper"},
+        )
+        plan = RemovalAnalyzer(self.home).analyze(app)
+        self.assertEqual(
+            plan.actions[0].command,
+            (
+                "/usr/bin/pkexec",
+                "/usr/bin/zypper",
+                "--non-interactive",
+                "remove",
+                "--clean-deps",
+                "harmless-app",
+            ),
+        )
+        self.assertTrue(any("helper-lib" in warning for warning in plan.warnings))
 
 
 if __name__ == "__main__":

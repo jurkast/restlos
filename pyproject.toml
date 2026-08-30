@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "restlos-uninstaller"
-version = "1.1.0"
-description = "Careful complete application remover for Zorin OS and Ubuntu"
+version = "1.2.0"
+description = "Careful complete application remover for major Linux distribution families"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }

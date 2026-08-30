@@ -8,6 +8,9 @@ from typing import Any
 
 class SourceKind(str, Enum):
     APT = "APT/DEB"
+    DNF = "DNF/RPM"
+    PACMAN = "pacman"
+    ZYPPER = "Zypper/RPM"
     FLATPAK = "Flatpak"
     SNAP = "Snap"
     APPIMAGE = "AppImage"

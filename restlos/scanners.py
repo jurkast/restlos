@@ -6,13 +6,11 @@ import shutil
 from collections import defaultdict
 from pathlib import Path
 
-from . import APP_ID
+from . import APP_ID, LEGACY_APP_IDS
 from .game_scanners import GamePlatformScanner
 from .models import AppRecord, SourceKind
+from .package_managers import PACKAGE_ID_PATTERN, native_package_adapter
 from .utils import DesktopEntry, command_executable, parse_desktop_file, run_command
-
-
-PACKAGE_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9+._:-]*$")
 
 
 class ApplicationScanner:
@@ -26,7 +24,7 @@ class ApplicationScanner:
         records: list[AppRecord] = []
         records.extend(self._scan_flatpak())
         records.extend(self._scan_snap())
-        records.extend(self._scan_apt())
+        records.extend(self._scan_native_packages())
         game_scanner = GamePlatformScanner(self.home)
         records.extend(game_scanner.scan())
         records.extend(self._scan_wine_and_manual())
@@ -35,7 +33,7 @@ class ApplicationScanner:
 
         deduplicated: dict[str, AppRecord] = {}
         for record in records:
-            if record.package_id == APP_ID or record.key.endswith(":restlos"):
+            if record.package_id in {APP_ID, *LEGACY_APP_IDS} or record.key.endswith(":restlos"):
                 continue
             current = deduplicated.get(record.key)
             if current is None or len(record.description) > len(current.description):
@@ -156,49 +154,16 @@ class ApplicationScanner:
             )
         return records
 
-    def _scan_apt(self) -> list[AppRecord]:
+    def _scan_native_packages(self) -> list[AppRecord]:
         system_entries = [
             entry
             for entry in self._desktop_entries
             if str(entry.path).startswith(("/usr/share/applications/", "/usr/local/share/applications/"))
         ]
-        paths = [str(entry.path) for entry in system_entries if str(entry.path).startswith("/usr/")]
-        if not paths or not shutil.which("dpkg-query"):
+        adapter = native_package_adapter()
+        if adapter is None:
             return []
-        result = run_command(("dpkg-query", "-S", *paths), timeout=15)
-        owners: dict[str, str] = {}
-        for line in result.stdout.splitlines():
-            try:
-                package_part, owned_path = line.split(": ", 1)
-            except ValueError:
-                continue
-            package = package_part.split(",", 1)[0].split(":", 1)[0]
-            if PACKAGE_ID_PATTERN.fullmatch(package):
-                owners[owned_path] = package
-
-        by_package: dict[str, list[DesktopEntry]] = defaultdict(list)
-        for entry in system_entries:
-            package = owners.get(str(entry.path))
-            if package:
-                by_package[package].append(entry)
-        records: list[AppRecord] = []
-        for package, entries in by_package.items():
-            visible = sorted(entries, key=lambda item: ("settings" in item.app_id.casefold(), len(item.name)))
-            entry = visible[0]
-            records.append(
-                AppRecord(
-                    key=f"apt:{package}",
-                    name=entry.name,
-                    source=SourceKind.APT,
-                    package_id=package,
-                    description=entry.comment or entry.generic_name or "APT/DEB-Anwendung",
-                    icon=entry.icon,
-                    exec_line=entry.exec_line,
-                    desktop_files=tuple(str(item.path) for item in entries),
-                    scope="System",
-                )
-            )
-        return records
+        return adapter.scan(system_entries)
 
     def _scan_wine_and_manual(self) -> list[AppRecord]:
         records: list[AppRecord] = []
@@ -206,7 +171,7 @@ class ApplicationScanner:
             path_string = str(entry.path)
             if not path_string.startswith(str(self.home / ".local/share/applications")):
                 continue
-            if entry.app_id == APP_ID:
+            if entry.app_id in {APP_ID, *LEGACY_APP_IDS}:
                 continue
             executable = command_executable(entry.exec_line)
             expanded = Path(os.path.expandvars(os.path.expanduser(executable))) if executable else Path()

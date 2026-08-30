@@ -36,13 +36,21 @@ class ScannerTests(unittest.TestCase):
         )
         appimage = self.home / "Applications/Paint-Pro.AppImage"
         appimage.write_bytes(b"appimage")
+        legacy = self.home / ".local/share/applications/io.github.local.Restlos.desktop"
+        legacy.write_text(
+            "[Desktop Entry]\n"
+            "Type=Application\n"
+            "Name=Restlos\n"
+            f"Exec={self.home / '.local/bin/restlos'}\n",
+            encoding="utf-8",
+        )
         scanner = ApplicationScanner(self.home)
         records = scanner.scan()
         by_name = {record.name: record for record in records}
         self.assertEqual(by_name["My Tool"].source, SourceKind.MANUAL)
         self.assertEqual(by_name["Paint Pro"].source, SourceKind.APPIMAGE)
+        self.assertNotIn("Restlos", by_name)
 
 
 if __name__ == "__main__":
     unittest.main()
-

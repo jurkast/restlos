@@ -76,6 +76,7 @@ for required in \
     "restlos/__init__.py" \
     "restlos/gui.py" \
     "restlos/analyzer.py" \
+    "restlos/package_managers.py" \
     "restlos/game_scanners.py" \
     "run_restlos.py" \
     "assets/restlos-wrapper" \
@@ -99,9 +100,27 @@ fi
 if ! "$RESTLOS_PYTHON" -c \
     'import gi; gi.require_version("Gtk", "4.0"); from gi.repository import Gtk' >/dev/null 2>&1
 then
+    if command -v apt-get >/dev/null 2>&1
+    then
+        RESTLOS_DEPENDENCY_COMMAND="sudo apt install python3-gi gir1.2-gtk-4.0 policykit-1"
+    elif command -v dnf5 >/dev/null 2>&1
+    then
+        RESTLOS_DEPENDENCY_COMMAND="sudo dnf5 install python3-gobject gtk4 polkit"
+    elif command -v dnf >/dev/null 2>&1
+    then
+        RESTLOS_DEPENDENCY_COMMAND="sudo dnf install python3-gobject gtk4 polkit"
+    elif command -v pacman >/dev/null 2>&1
+    then
+        RESTLOS_DEPENDENCY_COMMAND="sudo pacman -S python-gobject gtk4 polkit"
+    elif command -v zypper >/dev/null 2>&1
+    then
+        RESTLOS_DEPENDENCY_COMMAND="sudo zypper install python3-gobject typelib-1_0-Gtk-4_0 polkit"
+    else
+        RESTLOS_DEPENDENCY_COMMAND="Installiere Python-PyGObject, GTK 4 und PolicyKit mit dem Paketmanager deiner Distribution."
+    fi
     printf '%s\n' \
-        "GTK 4/PyGObject fehlt. Installiere es unter Zorin mit:" \
-        "  sudo apt install python3-gi gir1.2-gtk-4.0" >&2
+        "GTK 4/PyGObject fehlt. Passender Installationshinweis:" \
+        "  ${RESTLOS_DEPENDENCY_COMMAND}" >&2
     exit 1
 fi
 
@@ -194,4 +213,4 @@ fi
 
 printf '%s\n' \
     "Installation abgeschlossen." \
-    "Starte Restlos über das Zorin-Menü oder mit: ${RESTLOS_COMMAND_PATH}"
+    "Starte Restlos über das Anwendungsmenü oder mit: ${RESTLOS_COMMAND_PATH}"

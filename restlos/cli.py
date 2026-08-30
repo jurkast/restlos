@@ -14,7 +14,7 @@ from .utils import format_size
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="restlos",
-        description="Anwendungen und sicher zuordenbare Restdateien auf Zorin/Ubuntu entfernen.",
+        description="Anwendungen und sicher zuordenbare Restdateien unter Linux entfernen.",
     )
     parser.add_argument("--version", action="version", version=f"Restlos {__version__}")
     subparsers = parser.add_subparsers(dest="command")
@@ -106,4 +106,3 @@ def main(argv: list[str] | None = None) -> int:
     for error in result.errors:
         print(f"  {error}", file=sys.stderr)
     return 1
-

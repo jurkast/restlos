@@ -1,5 +1,17 @@
 # Änderungsprotokoll
 
+## 1.2.0 – 2026-08-30
+
+- native Paketmanager-Adapter für DNF/RPM auf Fedora-/RHEL-Systemen, pacman auf Arch-basierten Systemen und Zypper/RPM auf openSUSE
+- automatische Auswahl des zur Betriebssystemfamilie passenden Paketmanagers über `/etc/os-release`
+- grafische Paketerkennung anhand der Besitzer von Desktop-Dateien in der jeweiligen Paketdatenbank
+- verpflichtende Entfernungsvorschau für alle nativen Paketmanager; bei Simulationsfehlern wird die Paketaktion blockiert
+- distributionsspezifische Schutzlisten für Kernel, Bootloader, Paketmanager, Desktop und andere kritische Systemkomponenten
+- Anzeige zusätzlich entfernter, nicht mehr benötigter Abhängigkeiten vor der Bestätigung
+- distributionsabhängige Installationshinweise für GTK 4, PyGObject und PolicyKit
+- zusätzliche CI-Prüfungen in Fedora-, Arch-Linux- und openSUSE-Containern
+- alte Restlos-App-IDs werden zuverlässig ausgeblendet und beim Installieren bereinigt
+
 ## 1.1.0 – 2026-08-30
 
 - öffentliche Projektidentität `io.github.jurkastl.Restlos` und GitHub-Projektmetadaten

@@ -6,13 +6,13 @@
 
 [English](README.en.md) · [Downloads](https://github.com/jurkastl/restlos/releases) · [Fehler melden](https://github.com/jurkastl/restlos/issues)
 
-Restlos ist ein grafischer App-Deinstaller für Zorin OS und Ubuntu. Die Anwendung führt Programme aus mehreren Installationssystemen in einer Oberfläche zusammen und erstellt vor jeder Entfernung einen sichtbaren, abwählbaren Löschplan.
+Restlos ist ein grafischer App-Deinstaller für die großen Linux-Distributionsfamilien. Die Anwendung führt Programme aus mehreren Installationssystemen in einer Oberfläche zusammen und erstellt vor jeder Entfernung einen sichtbaren, abwählbaren Löschplan.
 
 > **Öffentliche Beta:** Restlos kann Daten dauerhaft löschen. Prüfe den angezeigten Löschplan aufmerksam und sichere wichtige Spielstände und Dateien vorher.
 
 ## Funktionen
 
-- erkennt grafische APT/DEB-, Flatpak- und Snap-Anwendungen
+- erkennt grafische APT/DEB-, DNF/RPM-, pacman-, Zypper/RPM-, Flatpak- und Snap-Anwendungen
 - erkennt AppImages, Wine-Menüeinträge und manuell installierte Programme
 - liest installierte Spiele direkt aus Lutris-, Steam- und Heroic-Bibliotheken
 - erkennt vollständige Bottles-Umgebungen und PlayOnLinux-Präfixe
@@ -24,7 +24,8 @@ Restlos ist ein grafischer App-Deinstaller für Zorin OS und Ubuntu. Die Anwendu
 - sucht app-spezifische Daten in `.config`, `.cache`, `.local/share`, `.local/state`, `.var/app`, `snap`, `Applications`, `Games`, `Downloads` und auf dem Desktop
 - liest bei manuellen Startern referenzierte Installationspfade aus, ohne den Starter auszuführen
 - zeigt Pfade, Begründung, Trefferqualität und Größe vor dem Löschen
-- entfernt APT-Pakete mit `purge`, Flatpaks mit `--delete-data` und Snaps mit `--purge`
+- entfernt native Pakete über APT, DNF, pacman oder Zypper sowie Flatpaks mit `--delete-data` und Snaps mit `--purge`
+- simuliert jede native Paketentfernung und blockiert sie, falls kritische Systemkomponenten betroffen wären
 - erkennt laufende Prozesse innerhalb der ausgewählten Programmordner
 - unterstützt dauerhafte Löschung oder den Papierkorb
 - schreibt ein minimales Ergebnisprotokoll nach `~/.local/state/restlos/history`
@@ -34,22 +35,25 @@ Restlos zeigt bewusst **Anwendungen, Spiele und eigenständige Programmumgebunge
 
 ## Unterstützte Systeme
 
-- Zorin OS und Ubuntu-basierte Systeme
+- Debian, Ubuntu, Zorin OS und darauf basierende Systeme mit APT/DEB
+- Fedora, RHEL und verwandte Systeme mit DNF/RPM
+- Arch Linux, Manjaro und verwandte Systeme mit pacman
+- openSUSE Leap/Tumbleweed und verwandte Systeme mit Zypper/RPM
 - Python 3.10 oder neuer
 - GTK 4 und PyGObject
 
-Andere Linux-Distributionen sind willkommen, werden derzeit aber noch nicht als vollständig unterstützt bezeichnet. Insbesondere die APT-Paketentfernung ist für Debian-/Ubuntu-Systeme ausgelegt.
+Flatpak, Snap, AppImage, Wine sowie die Spieleplattformen funktionieren unabhängig vom nativen Paketmanager. Distributionen mit anderen Paketmanagern – etwa Alpine/APK, Gentoo/Portage, NixOS, Solus/eopkg oder Void/xbps – werden noch nicht als vollständig unterstützt bezeichnet.
 
-## Installation unter Zorin OS und Ubuntu
+## Installation
 
-Die aktuelle Ausgabe von der [Release-Seite](https://github.com/jurkastl/restlos/releases) herunterladen. Für Version 1.1.0 geht es auch vollständig im Terminal:
+Die aktuelle Ausgabe von der [Release-Seite](https://github.com/jurkastl/restlos/releases) herunterladen. Für Version 1.2.0 geht es auch vollständig im Terminal:
 
 ```bash
-curl -LO https://github.com/jurkastl/restlos/releases/download/v1.1.0/Restlos-1.1.0.tar.gz
-curl -LO https://github.com/jurkastl/restlos/releases/download/v1.1.0/Restlos-1.1.0.sha256
-sha256sum --check Restlos-1.1.0.sha256
-tar -xzf Restlos-1.1.0.tar.gz
-cd Restlos-1.1.0
+curl -LO https://github.com/jurkastl/restlos/releases/download/v1.2.0/Restlos-1.2.0.tar.gz
+curl -LO https://github.com/jurkastl/restlos/releases/download/v1.2.0/Restlos-1.2.0.sha256
+sha256sum --check Restlos-1.2.0.sha256
+tar -xzf Restlos-1.2.0.tar.gz
+cd Restlos-1.2.0
 ./install.sh
 ```
 
@@ -59,12 +63,22 @@ Alternativ das Release grafisch entpacken, im entpackten Ordner ein Terminal öf
 ./install.sh
 ```
 
-Danach erscheint **Restlos** im Zorin-Menü. Alternativ lässt es sich mit `~/.local/bin/restlos` starten.
+Danach erscheint **Restlos** im Anwendungsmenü. Alternativ lässt es sich mit `~/.local/bin/restlos` starten.
 
-Falls GTK/PyGObject fehlt:
+Falls GTK/PyGObject fehlt, gilt je nach Distribution einer dieser Befehle:
 
 ```bash
+# Debian / Ubuntu / Zorin OS
 sudo apt install python3-gi gir1.2-gtk-4.0 policykit-1
+
+# Fedora / RHEL
+sudo dnf install python3-gobject gtk4 polkit
+
+# Arch Linux / Manjaro
+sudo pacman -S python-gobject gtk4 polkit
+
+# openSUSE
+sudo zypper install python3-gobject typelib-1_0-Gtk-4_0 polkit
 ```
 
 ## Terminalbefehle
@@ -109,7 +123,7 @@ Mit Einstellungen und Historie:
 
 ## Sicherheitsmodell
 
-Restlos führt niemals den Starter einer zu untersuchenden Anwendung aus. Paketkennungen werden validiert und Befehle werden als Argumentlisten statt als Shelltext gestartet. Breite oder gemeinsam verwendete Pfade wie das Home-Verzeichnis, `.config`, `.local/share`, der gesamte Flatpak-, Steam- oder Lutris-Speicher und das Standard-Wine-Präfix sind gesperrt. Symlinks werden selbst gelöscht und nicht bis zu ihrem Ziel verfolgt. Externe Spielebibliotheken werden nur über die konkreten, vom jeweiligen Launcher registrierten Spielpfade freigegeben.
+Restlos führt niemals den Starter einer zu untersuchenden Anwendung aus. Paketkennungen werden validiert und Befehle werden als Argumentlisten statt als Shelltext gestartet. APT, DNF, pacman und Zypper müssen den vollständigen Entfernungsvorgang zuerst ohne Änderungen berechnen. Schlägt diese Vorschau fehl oder enthält sie geschützte Systempakete, wird die Paketaktion blockiert. Breite oder gemeinsam verwendete Pfade wie das Home-Verzeichnis, `.config`, `.local/share`, der gesamte Flatpak-, Steam- oder Lutris-Speicher und das Standard-Wine-Präfix sind gesperrt. Symlinks werden selbst gelöscht und nicht bis zu ihrem Ziel verfolgt. Externe Spielebibliotheken werden nur über die konkreten, vom jeweiligen Launcher registrierten Spielpfade freigegeben.
 
 Treffer mit der Einstufung **prüfen** sind standardmäßig abgewählt. Gemeinsame Wine-Präfixe werden nicht als Ganzes gelöscht; darin wird nur ein eindeutig passender Programmordner vorgeschlagen. Für Systempakete erscheint bei Bedarf die normale PolicyKit-Passwortabfrage.
 

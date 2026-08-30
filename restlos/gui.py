@@ -702,7 +702,7 @@ class RestlosApplication(Gtk.Application):
             modal=True,
             program_name=APP_NAME,
             version=__version__,
-            comments="Sicherer vollständiger App-Deinstaller für Zorin OS und Ubuntu.",
+            comments="Sicherer vollständiger App-Deinstaller für große Linux-Distributionsfamilien.",
             copyright="2026 – lokale Open-Source-Ausgabe",
             license_type=Gtk.License.MIT_X11,
         )
