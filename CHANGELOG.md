@@ -1,5 +1,12 @@
 # Änderungsprotokoll
 
+## 1.4.2 – 2026-08-30
+
+- sicherer Übergang für die geplante Änderung des GitHub-Benutzernamens von `jurkastl` zu `jurkast`
+- Update-Suche akzeptiert Releases aus dem bisherigen und dem neuen Repository-Namensraum
+- automatischer Fallback auf den bisherigen Namensraum, solange der neue GitHub-Benutzername noch nicht aktiv ist
+- strikte Prüfung von Release-Dateinamen, Versionen, Digests und beiden ausdrücklich erlaubten Projektpfaden bleibt erhalten
+
 ## 1.4.1 – 2026-08-30
 
 - international verständlicher sichtbarer Name **Restlos Uninstaller**

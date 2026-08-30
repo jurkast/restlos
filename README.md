@@ -51,14 +51,14 @@ Flatpak, Snap, AppImage, Wine sowie die Spieleplattformen funktionieren unabhän
 
 ## Installation
 
-Die aktuelle Ausgabe von der [Release-Seite](https://github.com/jurkastl/restlos/releases) herunterladen. Für Version 1.4.1 geht es auch vollständig im Terminal:
+Die aktuelle Ausgabe von der [Release-Seite](https://github.com/jurkastl/restlos/releases) herunterladen. Für Version 1.4.2 geht es auch vollständig im Terminal:
 
 ```bash
-curl -LO https://github.com/jurkastl/restlos/releases/download/v1.4.1/Restlos-1.4.1.tar.gz
-curl -LO https://github.com/jurkastl/restlos/releases/download/v1.4.1/Restlos-1.4.1.sha256
-sha256sum --check Restlos-1.4.1.sha256
-tar -xzf Restlos-1.4.1.tar.gz
-cd Restlos-1.4.1
+curl -LO https://github.com/jurkastl/restlos/releases/download/v1.4.2/Restlos-1.4.2.tar.gz
+curl -LO https://github.com/jurkastl/restlos/releases/download/v1.4.2/Restlos-1.4.2.sha256
+sha256sum --check Restlos-1.4.2.sha256
+tar -xzf Restlos-1.4.2.tar.gz
+cd Restlos-1.4.2
 ./install.sh
 ```
 
@@ -117,13 +117,13 @@ Unter **Menü → Automatisch nach Updates suchen** lässt sich die Startprüfun
 Der Installer ist weiterhin versionsbasiert und kann auch manuell ausgeführt werden. Eine neue lokale Ausgabe wird so installiert:
 
 ```bash
-./update.sh /pfad/zu/Restlos-1.4.1.tar.gz
+./update.sh /pfad/zu/Restlos-1.4.2.tar.gz
 ```
 
 Für ein über HTTPS geladenes Release ist eine bekannte SHA-256-Prüfsumme Pflicht:
 
 ```bash
-./update.sh 'https://github.com/jurkastl/restlos/releases/download/v1.4.1/Restlos-1.4.1.tar.gz' '64-stellige-sha256-prüfsumme'
+./update.sh 'https://github.com/jurkastl/restlos/releases/download/v1.4.2/Restlos-1.4.2.tar.gz' '64-stellige-sha256-prüfsumme'
 ```
 
 Updates werden zuerst in ein neues Versionsverzeichnis kopiert und geprüft. Erst danach wird der `current`-Symlink atomar umgeschaltet. Einstellungen und Entfernungshistorie bleiben erhalten.

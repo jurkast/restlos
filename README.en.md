@@ -39,14 +39,14 @@ Flatpak, Snap, AppImage, Wine and game-platform detection are independent of the
 
 ## Install
 
-Download the latest package from [GitHub Releases](https://github.com/jurkastl/restlos/releases). For version 1.4.1:
+Download the latest package from [GitHub Releases](https://github.com/jurkastl/restlos/releases). For version 1.4.2:
 
 ```bash
-curl -LO https://github.com/jurkastl/restlos/releases/download/v1.4.1/Restlos-1.4.1.tar.gz
-curl -LO https://github.com/jurkastl/restlos/releases/download/v1.4.1/Restlos-1.4.1.sha256
-sha256sum --check Restlos-1.4.1.sha256
-tar -xzf Restlos-1.4.1.tar.gz
-cd Restlos-1.4.1
+curl -LO https://github.com/jurkastl/restlos/releases/download/v1.4.2/Restlos-1.4.2.tar.gz
+curl -LO https://github.com/jurkastl/restlos/releases/download/v1.4.2/Restlos-1.4.2.sha256
+sha256sum --check Restlos-1.4.2.sha256
+tar -xzf Restlos-1.4.2.tar.gz
+cd Restlos-1.4.2
 ./install.sh
 ```
 
