@@ -13,7 +13,8 @@ from gi.repository import Gdk, Gio, GLib, Gtk, Pango  # noqa: E402
 
 from . import APP_ID, APP_NAME, PROJECT_URL, __version__
 from .analyzer import RemovalAnalyzer
-from .models import AppRecord, Confidence, RemovalPlan, RemovalResult, SourceKind
+from .models import AppRecord, Confidence, RecoveryRecord, RemovalPlan, RemovalResult, RestoreResult, SourceKind
+from .recovery import RecoveryManager
 from .remover import RemovalExecutor
 from .scanners import ApplicationScanner
 from .updater import ReleaseInfo, UpdateClient, UpdateError, UpdateState
@@ -143,6 +144,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.current_app: AppRecord | None = None
         self.current_plan: RemovalPlan | None = None
         self._legacy_folder_dialog: Gtk.FileChooserNative | None = None
+        self._recovery_dialog: Gtk.Dialog | None = None
         self.busy = False
 
         self._build_header()
@@ -166,6 +168,7 @@ class MainWindow(Gtk.ApplicationWindow):
         header.pack_start(self.refresh_button)
 
         menu = Gio.Menu()
+        menu.append("Wiederherstellungszentrum …", "app.recovery")
         menu.append("Protokollordner öffnen", "app.open-history")
         menu.append("Nach Updates suchen …", "app.check-updates")
         menu.append("Automatisch nach Updates suchen", "app.automatic-updates")
@@ -321,8 +324,8 @@ class MainWindow(Gtk.ApplicationWindow):
         outer.append(scroll)
 
         options = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        self.permanent_check = Gtk.CheckButton(label="Benutzerdaten endgültig löschen (nicht in den Papierkorb)")
-        self.permanent_check.set_active(True)
+        self.permanent_check = Gtk.CheckButton(label="Benutzerdaten endgültig löschen (keine Wiederherstellung)")
+        self.permanent_check.set_active(False)
         options.append(self.permanent_check)
         self.process_check = Gtk.CheckButton(label="Zugehörige laufende Prozesse automatisch beenden")
         self.process_check.set_active(True)
@@ -582,11 +585,17 @@ class MainWindow(Gtk.ApplicationWindow):
         if processes:
             names = ", ".join(f"{name} (PID {pid})" for pid, name in processes[:5])
             process_note = f"\n\nLaufende Prozesse: {names}"
-        mode = "dauerhaft gelöscht" if permanent else "in den Papierkorb verschoben"
+        mode = "dauerhaft gelöscht" if permanent else "wiederherstellbar in den Papierkorb verschoben"
+        recovery_note = ""
+        if not permanent and plan.actions:
+            recovery_note = (
+                "\n\nHinweis: Paket-Deinstallationen und Änderungen an Launcher-Bibliotheken sind nicht "
+                "automatisch wiederherstellbar; nur die ausgewählten Dateipfade werden in den Papierkorb verschoben."
+            )
         secondary = (
             f"{len(plan.actions)} Paketaktion(en) und {len(plan.selected_targets)} ausgewählte Pfade "
             f"mit {format_size(plan.total_size)} werden verarbeitet. Benutzerdaten werden {mode}."
-            f"{process_note}"
+            f"{recovery_note}{process_note}"
         )
         dialog = Gtk.MessageDialog(
             transient_for=self,
@@ -643,15 +652,295 @@ class MainWindow(Gtk.ApplicationWindow):
         self.progress_spinner.stop()
         self.progress_bar.set_fraction(1.0)
         if result.success:
-            title = f"„{plan.app.name}“ wurde entfernt"
+            title = (
+                f"„{plan.app.name}“ wurde entfernt"
+                if not result.residual_paths
+                else f"„{plan.app.name}“ wurde entfernt – Restdaten gefunden"
+            )
+            detail_parts = [f"{len(result.removed_paths)} Pfade wurden verarbeitet."]
+            if result.recovery_items:
+                detail_parts.append(
+                    f"{len(result.recovery_items)} Pfade können im Wiederherstellungszentrum zurückgeholt werden."
+                )
+            if result.residual_paths:
+                preview = "\n".join(result.residual_paths[:6])
+                suffix = "\n…" if len(result.residual_paths) > 6 else ""
+                detail_parts.append(
+                    f"Der Kontrollscan fand {len(result.residual_paths)} weitere mögliche Restpfade:\n"
+                    f"{preview}{suffix}"
+                )
+            elif result.verification_error:
+                detail_parts.append(f"Der Kontrollscan konnte nicht abgeschlossen werden: {result.verification_error}")
+            else:
+                detail_parts.append("Kontrollscan: keine weiteren zuordenbaren Restpfade gefunden.")
+            if result.kept_paths:
+                detail_parts.append(
+                    f"{len(result.kept_paths)} nicht ausgewählte Pfade wurden wie gewünscht beibehalten."
+                )
+            detail_parts.append(
+                f"Protokoll: {result.receipt_path or 'konnte nicht geschrieben werden'}"
+            )
+            details = "\n\n".join(detail_parts)
+            message_type = Gtk.MessageType.WARNING if result.residual_paths else Gtk.MessageType.INFO
+        else:
+            title = "Entfernung nicht vollständig"
+            detail_parts = ["\n".join(result.errors[:8]) or "Ein unbekannter Fehler ist aufgetreten."]
+            if result.recovery_items:
+                detail_parts.append(
+                    f"{len(result.recovery_items)} bereits verschobene Pfade sind im Wiederherstellungszentrum verfügbar."
+                )
+            details = "\n\n".join(detail_parts)
+            message_type = Gtk.MessageType.ERROR
+        dialog = Gtk.MessageDialog(
+            transient_for=self,
+            modal=True,
+            message_type=message_type,
+            buttons=Gtk.ButtonsType.NONE,
+            text=title,
+            secondary_text=details,
+        )
+        dialog.add_button("Schließen", Gtk.ResponseType.CLOSE)
+        if result.recovery_items:
+            dialog.add_button("Wiederherstellungszentrum", Gtk.ResponseType.HELP)
+        dialog.connect("response", self._after_result_dialog, result)
+        dialog.present()
+        return False
+
+    def _after_result_dialog(self, dialog: Gtk.MessageDialog, response: int, result: RemovalResult) -> None:
+        dialog.destroy()
+        if result.success:
+            self.current_app = None
+            self.current_plan = None
+            self.detail_stack.set_visible_child_name("empty")
+            self._load_applications()
+        else:
+            self.detail_stack.set_visible_child_name("detail")
+            self._update_plan_summary()
+        if response == Gtk.ResponseType.HELP:
+            self.show_recovery_center()
+
+    def show_recovery_center(self) -> None:
+        if self._recovery_dialog is not None:
+            self._recovery_dialog.present()
+            return
+        dialog = Gtk.Dialog(
+            transient_for=self,
+            modal=True,
+            title="Restlos-Wiederherstellungszentrum",
+        )
+        dialog.set_default_size(760, 520)
+        dialog.add_button("Schließen", Gtk.ResponseType.CLOSE)
+        dialog.connect("response", self._close_recovery_center)
+        content = dialog.get_content_area()
+        content.set_spacing(14)
+        content.set_margin_top(20)
+        content.set_margin_bottom(16)
+        content.set_margin_start(20)
+        content.set_margin_end(20)
+
+        title = Gtk.Label(label="Wiederherstellbare Benutzerdaten", xalign=0)
+        title.add_css_class("hero-title")
+        content.append(title)
+        note = Gtk.Label(
+            label=(
+                "Hier kannst du durch Restlos in den Papierkorb verschobene Dateien an ihren ursprünglichen Ort "
+                "zurückholen. Paket-Deinstallationen und Änderungen an Spielebibliotheken werden dabei nicht rückgängig gemacht."
+            ),
+            xalign=0,
+        )
+        note.set_wrap(True)
+        note.add_css_class("muted")
+        content.append(note)
+
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.set_vexpand(True)
+        record_list = Gtk.ListBox()
+        record_list.set_selection_mode(Gtk.SelectionMode.NONE)
+        record_list.add_css_class("card")
+        loading = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        loading.set_halign(Gtk.Align.CENTER)
+        loading.set_margin_top(36)
+        loading.set_margin_bottom(36)
+        spinner = Gtk.Spinner()
+        spinner.start()
+        loading.append(spinner)
+        loading.append(Gtk.Label(label="Papierkorb und Restlos-Protokolle werden geprüft …"))
+        record_list.append(loading)
+        scroll.set_child(record_list)
+        content.append(scroll)
+        self._recovery_dialog = dialog
+        dialog.present()
+
+        def worker() -> None:
+            try:
+                records = RecoveryManager().list_records()
+                GLib.idle_add(self._recovery_records_loaded, dialog, record_list, records, None)
+            except Exception as error:  # defensive boundary for the GUI worker
+                GLib.idle_add(self._recovery_records_loaded, dialog, record_list, [], str(error))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _recovery_records_loaded(
+        self,
+        dialog: Gtk.Dialog,
+        record_list: Gtk.ListBox,
+        records: list[RecoveryRecord],
+        error: str | None,
+    ) -> bool:
+        if self._recovery_dialog is not dialog:
+            return False
+        _clear_box(record_list)
+        if error:
+            empty_text = f"Wiederherstellungsdaten konnten nicht gelesen werden: {error}"
+        elif not records:
+            empty_text = "Keine wiederherstellbaren Restlos-Vorgänge gefunden."
+        else:
+            empty_text = ""
+            for record in records:
+                record_list.append(self._recovery_row(record, dialog))
+        if empty_text:
+            empty = Gtk.Label(label=empty_text)
+            empty.set_wrap(True)
+            empty.set_margin_top(36)
+            empty.set_margin_bottom(36)
+            empty.set_margin_start(12)
+            empty.set_margin_end(12)
+            empty.add_css_class("muted")
+            record_list.append(empty)
+        return False
+
+    def _recovery_row(self, record: RecoveryRecord, parent: Gtk.Dialog) -> Gtk.ListBoxRow:
+        row = Gtk.ListBoxRow()
+        row.set_selectable(False)
+        row.add_css_class("target-row")
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
+        box.set_margin_top(10)
+        box.set_margin_bottom(10)
+        box.set_margin_start(8)
+        box.set_margin_end(8)
+
+        icon = Gtk.Image.new_from_icon_name("edit-undo-symbolic")
+        icon.set_pixel_size(34)
+        box.append(icon)
+        labels = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+        labels.set_hexpand(True)
+        name = Gtk.Label(label=record.app_name, xalign=0)
+        name.add_css_class("app-name")
+        labels.append(name)
+        timestamp = record.timestamp.replace("T", " ").replace("Z", " UTC")
+        details = Gtk.Label(
+            label=(
+                f"{timestamp} · {len(record.available_items)} Pfad(e) · "
+                f"{format_size(record.available_size)} · {record.source}"
+            ),
+            xalign=0,
+        )
+        details.add_css_class("muted")
+        labels.append(details)
+        if record.actions:
+            action_note = Gtk.Label(
+                label="Paket- oder Bibliotheksaktionen müssen bei Bedarf separat rückgängig gemacht werden.",
+                xalign=0,
+            )
+            action_note.set_wrap(True)
+            action_note.add_css_class("muted")
+            labels.append(action_note)
+        box.append(labels)
+        restore = Gtk.Button(label="Wiederherstellen")
+        restore.set_valign(Gtk.Align.CENTER)
+        restore.add_css_class("suggested-action")
+        restore.connect("clicked", self._confirm_restore, record, parent)
+        box.append(restore)
+        row.set_child(box)
+        return row
+
+    def _close_recovery_center(self, dialog: Gtk.Dialog, _response: int) -> None:
+        dialog.destroy()
+        if self._recovery_dialog is dialog:
+            self._recovery_dialog = None
+
+    def _confirm_restore(
+        self,
+        _button: Gtk.Button,
+        record: RecoveryRecord,
+        center: Gtk.Dialog,
+    ) -> None:
+        dialog = Gtk.MessageDialog(
+            transient_for=center,
+            modal=True,
+            message_type=Gtk.MessageType.QUESTION,
+            buttons=Gtk.ButtonsType.NONE,
+            text=f"Daten von „{record.app_name}“ wiederherstellen?",
+            secondary_text=(
+                f"{len(record.available_items)} Pfad(e) mit {format_size(record.available_size)} werden an ihre "
+                "ursprünglichen Orte zurückgeholt. Vorhandene Dateien werden nicht überschrieben. "
+                "Ein deinstalliertes Programmpaket wird dadurch nicht erneut installiert."
+            ),
+        )
+        dialog.add_button("Abbrechen", Gtk.ResponseType.CANCEL)
+        confirm = dialog.add_button("Wiederherstellen", Gtk.ResponseType.ACCEPT)
+        confirm.add_css_class("suggested-action")
+        dialog.set_default_response(Gtk.ResponseType.ACCEPT)
+        dialog.connect("response", self._on_restore_confirmed, record.recovery_id, center)
+        dialog.present()
+
+    def _on_restore_confirmed(
+        self,
+        dialog: Gtk.MessageDialog,
+        response: int,
+        recovery_id: str,
+        center: Gtk.Dialog,
+    ) -> None:
+        dialog.destroy()
+        if response != Gtk.ResponseType.ACCEPT:
+            return
+        self._close_recovery_center(center, Gtk.ResponseType.CLOSE)
+        progress = Gtk.Dialog(
+            transient_for=self,
+            modal=True,
+            title="Daten wiederherstellen",
+        )
+        progress.set_deletable(False)
+        area = progress.get_content_area()
+        area.set_spacing(14)
+        area.set_margin_top(24)
+        area.set_margin_bottom(24)
+        area.set_margin_start(28)
+        area.set_margin_end(28)
+        spinner = Gtk.Spinner()
+        spinner.set_size_request(42, 42)
+        spinner.set_halign(Gtk.Align.CENTER)
+        spinner.start()
+        area.append(spinner)
+        status = Gtk.Label(label="Papierkorbdaten werden an ihre ursprünglichen Orte zurückgeholt …")
+        status.set_wrap(True)
+        area.append(status)
+        progress.present()
+
+        def worker() -> None:
+            result = RecoveryManager().restore(recovery_id)
+            GLib.idle_add(self._restore_finished, progress, result)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _restore_finished(self, progress: Gtk.Dialog, result: RestoreResult) -> bool:
+        progress.destroy()
+        if result.success:
+            title = "Wiederherstellung abgeschlossen"
             details = (
-                f"{len(result.removed_paths)} Pfade wurden entfernt. "
-                f"Das Ergebnis wurde unter {result.receipt_path or 'keinem Protokollpfad'} dokumentiert."
+                f"{len(result.restored_paths)} Pfad(e) wurden zurückgeholt. "
+                "Falls das Programmpaket entfernt wurde, muss es separat neu installiert werden."
             )
             message_type = Gtk.MessageType.INFO
         else:
-            title = "Entfernung nicht vollständig"
-            details = "\n".join(result.errors[:8]) or "Ein unbekannter Fehler ist aufgetreten."
+            title = "Wiederherstellung nicht vollständig"
+            restored = (
+                f"{len(result.restored_paths)} Pfad(e) wurden bereits wiederhergestellt.\n\n"
+                if result.restored_paths
+                else ""
+            )
+            details = restored + ("\n".join(result.errors[:8]) or "Ein unbekannter Fehler ist aufgetreten.")
             message_type = Gtk.MessageType.ERROR
         dialog = Gtk.MessageDialog(
             transient_for=self,
@@ -661,20 +950,11 @@ class MainWindow(Gtk.ApplicationWindow):
             text=title,
             secondary_text=details,
         )
-        dialog.connect("response", self._after_result_dialog, result.success)
+        dialog.connect("response", lambda item, _response: item.destroy())
         dialog.present()
-        return False
-
-    def _after_result_dialog(self, dialog: Gtk.MessageDialog, _response: int, success: bool) -> None:
-        dialog.destroy()
-        if success:
-            self.current_app = None
-            self.current_plan = None
-            self.detail_stack.set_visible_child_name("empty")
+        if not self.busy:
             self._load_applications()
-        else:
-            self.detail_stack.set_visible_child_name("detail")
-            self._update_plan_summary()
+        return False
 
 
 class RestlosApplication(Gtk.Application):
@@ -699,6 +979,7 @@ class RestlosApplication(Gtk.Application):
     def _add_actions(self) -> None:
         for name, callback in (
             ("about", self._show_about),
+            ("recovery", self._show_recovery_center),
             ("open-history", self._open_history),
             ("check-updates", self._check_updates_manually),
         ):
@@ -726,6 +1007,11 @@ class RestlosApplication(Gtk.Application):
         dialog.set_website(PROJECT_URL)
         dialog.set_website_label("Projektseite auf GitHub")
         dialog.present()
+
+    def _show_recovery_center(self, _action, _parameter) -> None:
+        window = self.props.active_window
+        if isinstance(window, MainWindow):
+            window.show_recovery_center()
 
     def _open_history(self, _action, _parameter) -> None:
         path = Path.home() / ".local/state/restlos/history"

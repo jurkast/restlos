@@ -16,8 +16,10 @@ RESTLOS_USER_HOME="${RESTLOS_TEST_HOME:-${HOME}}"
 if [[ -n "${RESTLOS_TEST_HOME:-}" ]]
 then
     RESTLOS_DATA_HOME="${RESTLOS_USER_HOME}/.local/share"
+    RESTLOS_STATE_HOME="${RESTLOS_USER_HOME}/.local/state"
 else
     RESTLOS_DATA_HOME="${XDG_DATA_HOME:-${RESTLOS_USER_HOME}/.local/share}"
+    RESTLOS_STATE_HOME="${XDG_STATE_HOME:-${RESTLOS_USER_HOME}/.local/state}"
 fi
 RESTLOS_APP_HOME="${RESTLOS_DATA_HOME}/restlos"
 RESTLOS_COMMAND_PATH="${RESTLOS_USER_HOME}/.local/bin/restlos"
@@ -27,6 +29,13 @@ RESTLOS_ICON_PATH="${RESTLOS_DATA_HOME}/pixmaps/io.github.jurkastl.Restlos.svg"
 case "$RESTLOS_APP_HOME" in
     ""|"/"|"${RESTLOS_USER_HOME}"|"${RESTLOS_DATA_HOME}")
         printf 'Unsicheres Deinstallationsziel abgelehnt: %s\n' "$RESTLOS_APP_HOME" >&2
+        exit 1
+        ;;
+esac
+
+case "$RESTLOS_STATE_HOME" in
+    ""|"/"|"${RESTLOS_USER_HOME}")
+        printf 'Unsicheres Statusdatenziel abgelehnt: %s\n' "$RESTLOS_STATE_HOME" >&2
         exit 1
         ;;
 esac
@@ -44,7 +53,7 @@ then
     rm -rf -- \
         "${RESTLOS_USER_HOME}/.config/restlos" \
         "${RESTLOS_USER_HOME}/.cache/restlos" \
-        "${RESTLOS_USER_HOME}/.local/state/restlos"
+        "${RESTLOS_STATE_HOME}/restlos"
     printf '%s\n' "Restlos einschließlich Einstellungen und Historie wurde entfernt."
 else
     printf '%s\n' \

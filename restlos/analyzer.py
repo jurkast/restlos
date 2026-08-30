@@ -94,28 +94,12 @@ class RemovalAnalyzer:
 
     def analyze(self, app: AppRecord) -> RemovalPlan:
         plan = RemovalPlan(app=app)
-        aliases = self._aliases(app)
-        candidates: list[tuple[Path, str, Confidence]] = []
 
         if self._add_managed_action(plan, app):
             return plan
         self._add_manager_actions(plan, app)
-        candidates.extend(self._manager_targets(app))
-        candidates.extend(self._explicit_targets(app))
-        candidates.extend(self._known_data_targets(app, aliases))
-        candidates.extend(self._launcher_references(app, aliases))
-        candidates.extend(self._default_wine_targets(app, aliases))
+        plan.targets = self.discover_targets(app)
 
-        for desktop_file in app.desktop_files:
-            path = Path(desktop_file)
-            if is_within(path, self.home):
-                candidates.append((path, "Menüeintrag", Confidence.CERTAIN))
-
-        icon_path = Path(os.path.expanduser(app.icon))
-        if icon_path.is_absolute() and is_within(icon_path, self.home):
-            candidates.append((icon_path, "Anwendungssymbol", Confidence.CERTAIN))
-
-        plan.targets = self._safe_targets(candidates, self._trusted_paths(app))
         if app.source == SourceKind.WINE and app.metadata.get("wine_prefix") in {"", str(self.home / ".wine")}:
             plan.warnings.append(
                 "Die Anwendung verwendet möglicherweise das gemeinsame Standard-Wine-Präfix. "
@@ -136,6 +120,28 @@ class RemovalAnalyzer:
         if not plan.actions and not plan.targets:
             plan.warnings.append("Es wurden keine sicher zuordenbaren Löschziele gefunden.")
         return plan
+
+    def discover_targets(self, app: AppRecord) -> list[RemovalTarget]:
+        """Findet aktuell vorhandene Dateiziele ohne Paketaktionen auszuführen oder zu simulieren."""
+
+        aliases = self._aliases(app)
+        candidates: list[tuple[Path, str, Confidence]] = []
+        candidates.extend(self._manager_targets(app))
+        candidates.extend(self._explicit_targets(app))
+        candidates.extend(self._known_data_targets(app, aliases))
+        candidates.extend(self._launcher_references(app, aliases))
+        candidates.extend(self._default_wine_targets(app, aliases))
+
+        for desktop_file in app.desktop_files:
+            path = Path(desktop_file)
+            if is_within(path, self.home):
+                candidates.append((path, "Menüeintrag", Confidence.CERTAIN))
+
+        icon_path = Path(os.path.expanduser(app.icon))
+        if icon_path.is_absolute() and is_within(icon_path, self.home):
+            candidates.append((icon_path, "Anwendungssymbol", Confidence.CERTAIN))
+
+        return self._safe_targets(candidates, self._trusted_paths(app))
 
     @staticmethod
     def _metadata_list(app: AppRecord, key: str) -> list[object]:

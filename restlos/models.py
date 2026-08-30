@@ -118,4 +118,50 @@ class RemovalResult:
     removed_paths: list[str] = field(default_factory=list)
     action_output: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    recovery_items: list[RecoveryItem] = field(default_factory=list)
+    residual_paths: list[str] = field(default_factory=list)
+    kept_paths: list[str] = field(default_factory=list)
+    verification_error: str = ""
+    recovery_id: str = ""
     receipt_path: str = ""
+
+
+@dataclass(slots=True)
+class RecoveryItem:
+    original_path: str
+    trash_uri: str
+    size: int = 0
+    restored_at: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class RecoveryRecord:
+    recovery_id: str
+    receipt_path: str
+    timestamp: str
+    app_name: str
+    package_id: str
+    source: str
+    success: bool
+    items: list[RecoveryItem] = field(default_factory=list)
+    actions: list[str] = field(default_factory=list)
+    residual_paths: list[str] = field(default_factory=list)
+
+    @property
+    def available_items(self) -> list[RecoveryItem]:
+        return [item for item in self.items if item.trash_uri and not item.restored_at]
+
+    @property
+    def available_size(self) -> int:
+        return sum(item.size for item in self.available_items)
+
+
+@dataclass(slots=True)
+class RestoreResult:
+    success: bool
+    recovery_id: str
+    restored_paths: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)

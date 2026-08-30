@@ -77,6 +77,7 @@ for required in \
     "restlos/gui.py" \
     "restlos/analyzer.py" \
     "restlos/package_managers.py" \
+    "restlos/recovery.py" \
     "restlos/updater.py" \
     "restlos/game_scanners.py" \
     "run_restlos.py" \

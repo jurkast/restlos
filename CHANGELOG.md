@@ -1,5 +1,17 @@
 # Änderungsprotokoll
 
+## 1.4.0 – 2026-08-30
+
+- neues grafisches Wiederherstellungszentrum für von Restlos in den Desktop-Papierkorb verschobene Benutzerdaten
+- eindeutige Zuordnung jedes verschobenen Pfads über seine GIO-Papierkorb-URI und den gespeicherten Ursprungsort
+- sichere Rücksicherung ohne Überschreiben bereits vorhandener Dateien oder Ordner
+- lokale, atomar geschriebene Protokolle im neuen Schema 2 mit Löschmodus, Wiederherstellungsdaten und Kontrollergebnis
+- dateibasierter Kontrollscan nach jedem Löschvorgang, ohne eine erneute Paketaktion auszulösen
+- getrennte Anzeige unerwarteter Restpfade und bewusst nicht ausgewählter, beibehaltener Pfade
+- wiederherstellbarer Modus ist in der grafischen Oberfläche nun die sichere Voreinstellung
+- neue Terminalbefehle `restlos recovery list` und `restlos recovery restore ID --yes`
+- klare Begrenzung: Paket-Deinstallationen und Änderungen an Launcher-Bibliotheken werden nicht automatisch rückgängig gemacht
+
 ## 1.3.0 – 2026-08-30
 
 - automatische, standardmäßig höchstens einmal täglich ausgeführte Suche nach neuen GitHub-Releases beim Programmstart

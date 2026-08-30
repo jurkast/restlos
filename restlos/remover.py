@@ -12,17 +12,25 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
-from .analyzer import PathGuard, UnsafeTargetError
-from .models import RemovalAction, RemovalPlan, RemovalResult, SourceKind
+from . import __version__
+from .analyzer import PathGuard, RemovalAnalyzer, UnsafeTargetError
+from .models import RecoveryItem, RemovalAction, RemovalPlan, RemovalResult, SourceKind
+from .recovery import TrashBackend
 
 
 ProgressCallback = Callable[[str, float], None]
 
 
 class RemovalExecutor:
-    def __init__(self, home: Path | None = None) -> None:
+    def __init__(self, home: Path | None = None, *, trash: TrashBackend | None = None) -> None:
         self.home = (home or Path.home()).absolute()
         self.guard = PathGuard(self.home)
+        if home is not None:
+            self.state_home = self.home / ".local/state"
+        else:
+            configured = os.environ.get("XDG_STATE_HOME")
+            self.state_home = Path(configured).absolute() if configured else self.home / ".local/state"
+        self.trash = trash or TrashBackend()
 
     def related_processes(self, plan: RemovalPlan) -> list[tuple[int, str]]:
         roots = [target.path.absolute() for target in plan.selected_targets]
@@ -109,7 +117,7 @@ class RemovalExecutor:
             self.stop_processes(processes)
         elif processes:
             result.errors.append("Die Anwendung läuft noch und wurde nicht beendet.")
-            return result
+            return self._finish(plan, result, permanent)
 
         total_steps = max(len(plan.actions) + len(plan.selected_targets), 1)
         completed_steps = 0
@@ -129,7 +137,7 @@ class RemovalExecutor:
             except (OSError, subprocess.TimeoutExpired) as error:
                 result.errors.append(f"{action.label}: {error}")
                 if action.required:
-                    return self._finish(plan, result)
+                    return self._finish(plan, result, permanent)
                 continue
             output = "\n".join(part for part in (process.stdout.strip(), process.stderr.strip()) if part)
             if output:
@@ -137,7 +145,7 @@ class RemovalExecutor:
             if process.returncode != 0:
                 result.errors.append(f"{action.label} ist mit Code {process.returncode} fehlgeschlagen.")
                 if action.required:
-                    return self._finish(plan, result)
+                    return self._finish(plan, result, permanent)
             completed_steps += 1
 
         for target in sorted(plan.selected_targets, key=lambda item: len(item.path.parts), reverse=True):
@@ -147,7 +155,7 @@ class RemovalExecutor:
                 if permanent:
                     self._delete_permanently(target.path)
                 else:
-                    self._move_to_trash(target.path)
+                    result.recovery_items.append(self._move_to_trash(target.path, target.size))
                 if target.path.exists() or target.path.is_symlink():
                     raise OSError("Pfad ist nach dem Entfernen noch vorhanden")
                 result.removed_paths.append(str(target.path))
@@ -165,12 +173,13 @@ class RemovalExecutor:
                 except (OSError, ValueError, sqlite3.Error, json.JSONDecodeError) as error:
                     result.errors.append(f"{action.label}: {error}")
                     if action.required:
-                        return self._finish(plan, result)
+                        return self._finish(plan, result, permanent)
                 completed_steps += 1
 
-        callback("Entfernung wird geprüft …", 0.98)
+        callback("Kontrollscan nach verbliebenen Daten …", 0.98)
+        self._control_scan(plan, result)
         result.success = not result.errors
-        return self._finish(plan, result)
+        return self._finish(plan, result, permanent)
 
     def _trusted_paths(self, plan: RemovalPlan) -> tuple[Path, ...]:
         try:
@@ -276,39 +285,75 @@ class RemovalExecutor:
         elif path.exists():
             path.unlink()
 
-    def _move_to_trash(self, path: Path) -> None:
-        process = subprocess.run(
-            ("/usr/bin/gio", "trash", str(path)),
-            capture_output=True,
-            text=True,
-            errors="replace",
-            check=False,
-            timeout=120,
-        )
-        if process.returncode != 0:
-            raise OSError(process.stderr.strip() or "Verschieben in den Papierkorb fehlgeschlagen")
+    def _move_to_trash(self, path: Path, size: int) -> RecoveryItem:
+        return self.trash.move(path, size)
 
-    def _finish(self, plan: RemovalPlan, result: RemovalResult) -> RemovalResult:
-        result.receipt_path = self._write_receipt(plan, result)
+    def _control_scan(self, plan: RemovalPlan, result: RemovalResult) -> None:
+        try:
+            discovered = RemovalAnalyzer(self.home).discover_targets(plan.app)
+        except Exception as error:  # Kontrollscan darf ein korrektes Entfernen nicht rückgängig machen.
+            result.verification_error = str(error)
+            return
+        kept = {str(target.path.absolute()) for target in plan.targets if not target.selected}
+        result.kept_paths = sorted(
+            str(target.path.absolute())
+            for target in discovered
+            if str(target.path.absolute()) in kept
+        )
+        result.residual_paths = sorted(
+            str(target.path.absolute())
+            for target in discovered
+            if str(target.path.absolute()) not in kept
+        )
+
+    def _finish(self, plan: RemovalPlan, result: RemovalResult, permanent: bool) -> RemovalResult:
+        result.receipt_path = self._write_receipt(plan, result, permanent)
+        if result.receipt_path:
+            result.recovery_id = Path(result.receipt_path).stem
         return result
 
-    def _write_receipt(self, plan: RemovalPlan, result: RemovalResult) -> str:
-        state_directory = self.home / ".local/state/restlos/history"
+    def _write_receipt(self, plan: RemovalPlan, result: RemovalResult, permanent: bool) -> str:
+        state_directory = self.state_home / "restlos/history"
         try:
             state_directory.mkdir(parents=True, exist_ok=True, mode=0o700)
-            timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+            timestamp = datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
+            filename_timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
             safe_id = "".join(character if character.isalnum() else "-" for character in plan.app.package_id)[:80]
-            receipt = state_directory / f"{timestamp}-{safe_id}.json"
+            receipt = state_directory / f"{filename_timestamp}-{safe_id}.json"
             payload = {
-                "schema": 1,
+                "schema": 2,
+                "restlos_version": __version__,
                 "timestamp": timestamp,
                 "application": plan.app.to_dict(),
+                "mode": "permanent" if permanent else "trash",
                 "success": result.success,
                 "removed_paths": result.removed_paths,
+                "recovery_items": [item.to_dict() for item in result.recovery_items],
                 "actions": [action.label for action in plan.actions],
+                "residual_paths": result.residual_paths,
+                "kept_paths": result.kept_paths,
+                "verification_error": result.verification_error,
                 "errors": result.errors,
             }
-            receipt.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            temporary_name = ""
+            try:
+                with tempfile.NamedTemporaryFile(
+                    mode="w",
+                    encoding="utf-8",
+                    dir=state_directory,
+                    prefix=f".{receipt.name}.",
+                    delete=False,
+                ) as handle:
+                    temporary_name = handle.name
+                    json.dump(payload, handle, ensure_ascii=False, indent=2)
+                    handle.write("\n")
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                os.chmod(temporary_name, 0o600)
+                os.replace(temporary_name, receipt)
+            finally:
+                if temporary_name and Path(temporary_name).exists():
+                    Path(temporary_name).unlink()
             return str(receipt)
         except OSError:
             return ""

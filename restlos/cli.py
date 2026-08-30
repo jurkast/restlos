@@ -6,6 +6,7 @@ import sys
 
 from . import __version__
 from .analyzer import RemovalAnalyzer
+from .recovery import RecoveryManager
 from .remover import RemovalExecutor
 from .scanners import ApplicationScanner
 from .utils import format_size
@@ -29,8 +30,19 @@ def build_parser() -> argparse.ArgumentParser:
 
     remove_parser = subparsers.add_parser("remove", help="Anwendung gemäß Löschplan entfernen")
     remove_parser.add_argument("query")
-    remove_parser.add_argument("--yes", action="store_true", help="endgültige Löschung bestätigen")
+    remove_parser.add_argument("--yes", action="store_true", help="Entfernung bestätigen")
     remove_parser.add_argument("--trash", action="store_true", help="Benutzerdaten in den Papierkorb verschieben")
+
+    recovery_parser = subparsers.add_parser(
+        "recovery",
+        help="wiederherstellbare Entfernungsvorgänge verwalten",
+    )
+    recovery_commands = recovery_parser.add_subparsers(dest="recovery_command", required=True)
+    recovery_list = recovery_commands.add_parser("list", help="verfügbare Wiederherstellungen auflisten")
+    recovery_list.add_argument("--json", action="store_true")
+    recovery_restore = recovery_commands.add_parser("restore", help="Benutzerdaten eines Vorgangs wiederherstellen")
+    recovery_restore.add_argument("recovery_id")
+    recovery_restore.add_argument("--yes", action="store_true", help="Wiederherstellung bestätigen")
     return parser
 
 
@@ -57,6 +69,54 @@ def main(argv: list[str] | None = None) -> int:
     if not arguments.command:
         from .gui import run_gui
         return run_gui()
+
+    if arguments.command == "recovery":
+        manager = RecoveryManager()
+        if arguments.recovery_command == "list":
+            records = manager.list_records()
+            if arguments.json:
+                print(
+                    json.dumps(
+                        [
+                            {
+                                "id": record.recovery_id,
+                                "timestamp": record.timestamp,
+                                "application": record.app_name,
+                                "package_id": record.package_id,
+                                "source": record.source,
+                                "available_paths": [item.original_path for item in record.available_items],
+                                "available_size": record.available_size,
+                                "package_actions": record.actions,
+                                "residual_paths": record.residual_paths,
+                            }
+                            for record in records
+                        ],
+                        ensure_ascii=False,
+                        indent=2,
+                    )
+                )
+            elif not records:
+                print("Keine wiederherstellbaren Restlos-Vorgänge gefunden.")
+            else:
+                for record in records:
+                    print(
+                        f"{record.recovery_id}\t{record.app_name}\t"
+                        f"{len(record.available_items)} Pfad(e)\t{format_size(record.available_size)}"
+                    )
+            return 0
+
+        if not arguments.yes:
+            print("Abgebrochen: Für die Wiederherstellung ist --yes erforderlich.", file=sys.stderr)
+            return 2
+        result = manager.restore(arguments.recovery_id)
+        if result.success:
+            print(f"{len(result.restored_paths)} Pfad(e) wurden wiederhergestellt.")
+            print("Paketaktionen werden nicht automatisch rückgängig gemacht.")
+            return 0
+        print("Wiederherstellung nicht vollständig:", file=sys.stderr)
+        for error in result.errors:
+            print(f"  {error}", file=sys.stderr)
+        return 1
 
     applications = ApplicationScanner().scan()
     if arguments.command == "list":
@@ -101,6 +161,20 @@ def main(argv: list[str] | None = None) -> int:
     result = executor.execute(plan, permanent=not arguments.trash, progress=report)
     if result.success:
         print(f"{app.name} wurde entfernt. Protokoll: {result.receipt_path or 'nicht geschrieben'}")
+        if result.recovery_items:
+            print(
+                f"Wiederherstellbar: {len(result.recovery_items)} Pfad(e) mit Kennung {result.recovery_id}."
+            )
+        if result.residual_paths:
+            print(f"Kontrollscan: {len(result.residual_paths)} weitere mögliche Restpfade gefunden.")
+            for path in result.residual_paths[:10]:
+                print(f"  {path}")
+        elif result.verification_error:
+            print(f"Kontrollscan fehlgeschlagen: {result.verification_error}", file=sys.stderr)
+        else:
+            print("Kontrollscan: keine weiteren zuordenbaren Restpfade gefunden.")
+        if result.kept_paths:
+            print(f"Bewusst nicht ausgewählt und beibehalten: {len(result.kept_paths)} Pfad(e).")
         return 0
     print("Entfernung nicht vollständig:", file=sys.stderr)
     for error in result.errors:
