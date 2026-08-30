@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Quellcode auschecken
+        uses: actions/checkout@v6
+
+      - name: Systemabhängigkeiten installieren
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes desktop-file-utils gir1.2-gtk-4.0 python3-gi
+
+      - name: Tag und Projektversion vergleichen
+        run: |
+          version="$(python3 -I -B -c 'import pathlib,re; text=pathlib.Path("restlos/__init__.py").read_text(); print(re.search(r"^__version__ = \"([^\"]+)\"", text, re.M).group(1))')"
+          test "$GITHUB_REF_NAME" = "v${version}"
+
+      - name: Vollständige Prüfung
+        run: |
+          python3 -m compileall -q restlos tests
+          bash -n install.sh update.sh uninstall.sh scripts/build-release.sh
+          python3 -m unittest discover -s tests -v
+
+      - name: Release-Dateien erzeugen
+        run: |
+          export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          ./scripts/build-release.sh dist
+          cd dist
+          sha256sum --check Restlos-*.sha256
+
+      - name: GitHub-Release veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" \
+            "dist/Restlos-${version}.tar.gz" \
+            "dist/Restlos-${version}.sha256" \
+            --verify-tag \
+            --prerelease \
+            --generate-notes \
+            --title "Restlos ${version} (Beta)"

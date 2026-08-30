@@ -1,0 +1,322 @@
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import signal
+import sqlite3
+import subprocess
+import tempfile
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Callable
+
+from .analyzer import PathGuard, UnsafeTargetError
+from .models import RemovalAction, RemovalPlan, RemovalResult, SourceKind
+
+
+ProgressCallback = Callable[[str, float], None]
+
+
+class RemovalExecutor:
+    def __init__(self, home: Path | None = None) -> None:
+        self.home = (home or Path.home()).absolute()
+        self.guard = PathGuard(self.home)
+
+    def related_processes(self, plan: RemovalPlan) -> list[tuple[int, str]]:
+        roots = [target.path.absolute() for target in plan.selected_targets]
+        own_pids = {os.getpid(), os.getppid()}
+        matches: list[tuple[int, str]] = []
+        proc = Path("/proc")
+        if not proc.is_dir():
+            return matches
+        for entry in proc.iterdir():
+            if not entry.name.isdigit():
+                continue
+            pid = int(entry.name)
+            if pid in own_pids:
+                continue
+            try:
+                exe = (entry / "exe").resolve(strict=True)
+            except OSError:
+                exe = None
+            try:
+                cwd = (entry / "cwd").resolve(strict=True)
+            except OSError:
+                cwd = None
+            try:
+                cmdline = (entry / "cmdline").read_bytes().replace(b"\0", b" ").decode(errors="replace")
+            except OSError:
+                cmdline = ""
+            try:
+                command = (entry / "comm").read_text(errors="replace").strip()
+            except OSError:
+                command = "unbekannter Prozess"
+            related = False
+            for root in roots:
+                if root.is_dir():
+                    related = related or (exe is not None and self._is_within(exe, root))
+                    related = related or (cwd is not None and self._is_within(cwd, root))
+                elif exe is not None:
+                    related = related or exe == root
+            manager_tokens = {
+                SourceKind.LUTRIS: ("lutris",),
+                SourceKind.STEAM: ("steam", "steamwebhelper"),
+                SourceKind.HEROIC: ("heroic",),
+                SourceKind.BOTTLES: ("bottles",),
+                SourceKind.PLAYONLINUX: ("playonlinux",),
+            }.get(plan.app.source, ())
+            process_text = f"{command} {cmdline}".casefold()
+            if manager_tokens and any(token in process_text for token in manager_tokens):
+                related = True
+            if not related:
+                continue
+            matches.append((pid, command))
+        return matches
+
+    def stop_processes(self, processes: list[tuple[int, str]]) -> None:
+        for pid, _ in processes:
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except (ProcessLookupError, PermissionError):
+                continue
+        deadline = time.monotonic() + 2.0
+        while time.monotonic() < deadline:
+            remaining = [pid for pid, _ in processes if Path(f"/proc/{pid}").exists()]
+            if not remaining:
+                return
+            time.sleep(0.1)
+        for pid, _ in processes:
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                continue
+
+    def execute(
+        self,
+        plan: RemovalPlan,
+        *,
+        permanent: bool = True,
+        stop_processes: bool = True,
+        progress: ProgressCallback | None = None,
+    ) -> RemovalResult:
+        result = RemovalResult(success=False)
+        callback = progress or (lambda _message, _fraction: None)
+        processes = self.related_processes(plan)
+        if processes and stop_processes:
+            callback("Laufende Prozesse werden beendet …", 0.03)
+            self.stop_processes(processes)
+        elif processes:
+            result.errors.append("Die Anwendung läuft noch und wurde nicht beendet.")
+            return result
+
+        total_steps = max(len(plan.actions) + len(plan.selected_targets), 1)
+        completed_steps = 0
+        external_actions = [action for action in plan.actions if not action.internal_kind]
+        internal_actions = [action for action in plan.actions if action.internal_kind]
+        for action in external_actions:
+            callback(action.label, completed_steps / total_steps)
+            try:
+                process = subprocess.run(
+                    list(action.command),
+                    capture_output=True,
+                    text=True,
+                    errors="replace",
+                    check=False,
+                    timeout=900,
+                )
+            except (OSError, subprocess.TimeoutExpired) as error:
+                result.errors.append(f"{action.label}: {error}")
+                if action.required:
+                    return self._finish(plan, result)
+                continue
+            output = "\n".join(part for part in (process.stdout.strip(), process.stderr.strip()) if part)
+            if output:
+                result.action_output.append(f"{action.label}\n{output}")
+            if process.returncode != 0:
+                result.errors.append(f"{action.label} ist mit Code {process.returncode} fehlgeschlagen.")
+                if action.required:
+                    return self._finish(plan, result)
+            completed_steps += 1
+
+        for target in sorted(plan.selected_targets, key=lambda item: len(item.path.parts), reverse=True):
+            callback(f"Entferne {target.path}", completed_steps / total_steps)
+            try:
+                self.guard.validate(target.path, self._trusted_paths(plan))
+                if permanent:
+                    self._delete_permanently(target.path)
+                else:
+                    self._move_to_trash(target.path)
+                if target.path.exists() or target.path.is_symlink():
+                    raise OSError("Pfad ist nach dem Entfernen noch vorhanden")
+                result.removed_paths.append(str(target.path))
+            except (OSError, UnsafeTargetError) as error:
+                result.errors.append(f"{target.path}: {error}")
+            completed_steps += 1
+
+        if not result.errors:
+            for action in internal_actions:
+                callback(action.label, completed_steps / total_steps)
+                try:
+                    output = self._execute_internal_action(action)
+                    if output:
+                        result.action_output.append(f"{action.label}\n{output}")
+                except (OSError, ValueError, sqlite3.Error, json.JSONDecodeError) as error:
+                    result.errors.append(f"{action.label}: {error}")
+                    if action.required:
+                        return self._finish(plan, result)
+                completed_steps += 1
+
+        callback("Entfernung wird geprüft …", 0.98)
+        result.success = not result.errors
+        return self._finish(plan, result)
+
+    def _trusted_paths(self, plan: RemovalPlan) -> tuple[Path, ...]:
+        try:
+            values = json.loads(plan.app.metadata.get("trusted_paths", "[]"))
+        except (TypeError, json.JSONDecodeError):
+            return ()
+        if not isinstance(values, list):
+            return ()
+        return tuple(Path(value).absolute() for value in values if isinstance(value, str) and Path(value).is_absolute())
+
+    def _execute_internal_action(self, action: RemovalAction) -> str:
+        if action.internal_kind == "lutris-database":
+            return self._update_lutris_database(action.parameters)
+        if action.internal_kind == "json-remove-key":
+            return self._remove_json_key(action.parameters)
+        raise ValueError(f"unbekannte interne Aktion: {action.internal_kind}")
+
+    def _update_lutris_database(self, parameters: dict[str, str]) -> str:
+        database = Path(parameters.get("database", "")).absolute()
+        game_id = parameters.get("game_id", "")
+        allowed_databases = {
+            (self.home / ".local/share/lutris/pga.db").absolute(),
+            (self.home / ".var/app/net.lutris.Lutris/data/lutris/pga.db").absolute(),
+        }
+        if database not in allowed_databases or database.is_symlink() or not database.is_file():
+            raise ValueError("Lutris-Datenbankpfad ist nicht zulässig")
+        if not game_id.isdigit():
+            raise ValueError("Lutris-Spielkennung ist ungültig")
+        with sqlite3.connect(database, timeout=10) as connection:
+            tables = {
+                row[0]
+                for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            }
+            if "games_categories" in tables:
+                connection.execute("DELETE FROM games_categories WHERE game_id=?", (int(game_id),))
+            connection.execute("DELETE FROM games WHERE id=?", (int(game_id),))
+
+        cache_value = parameters.get("cache", "")
+        if cache_value:
+            cache = Path(cache_value).absolute()
+            allowed_caches = {
+                (self.home / ".cache/lutris/game-paths.json").absolute(),
+                (self.home / ".var/app/net.lutris.Lutris/cache/lutris/game-paths.json").absolute(),
+            }
+            if cache in allowed_caches and cache.is_file() and not cache.is_symlink():
+                try:
+                    payload = json.loads(cache.read_text(encoding="utf-8"))
+                except (OSError, UnicodeError, json.JSONDecodeError):
+                    payload = None
+                if isinstance(payload, dict) and game_id in payload:
+                    payload.pop(game_id, None)
+                    self._atomic_json_write(cache, payload)
+        return f"Lutris-Eintrag {game_id} entfernt"
+
+    def _remove_json_key(self, parameters: dict[str, str]) -> str:
+        path = Path(parameters.get("path", "")).absolute()
+        key = parameters.get("key", "")
+        allowed_roots = (
+            self.home / ".config/heroic",
+            self.home / ".config/legendary",
+            self.home / ".var/app/com.heroicgameslauncher.hgl/config",
+        )
+        if not any(self._is_within(path, root.absolute()) for root in allowed_roots):
+            raise ValueError("JSON-Verwaltungsdatei liegt außerhalb der Heroic-Konfiguration")
+        if path.name != "installed.json" or path.is_symlink() or not path.is_file() or not key:
+            raise ValueError("JSON-Verwaltungsaktion ist nicht zulässig")
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError("Heroic-Installationsdatei hat ein unbekanntes Format")
+        payload.pop(key, None)
+        self._atomic_json_write(path, payload)
+        return f"Heroic-Eintrag {key} entfernt"
+
+    @staticmethod
+    def _atomic_json_write(path: Path, payload: object) -> None:
+        mode = path.stat().st_mode & 0o777
+        temporary_name = ""
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=path.parent,
+                prefix=f".{path.name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as handle:
+                temporary_name = handle.name
+                json.dump(payload, handle, ensure_ascii=False, indent=2)
+                handle.write("\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.chmod(temporary_name, mode)
+            os.replace(temporary_name, path)
+        finally:
+            if temporary_name and Path(temporary_name).exists():
+                Path(temporary_name).unlink()
+
+    def _delete_permanently(self, path: Path) -> None:
+        if path.is_symlink() or path.is_file():
+            path.unlink()
+        elif path.is_dir():
+            shutil.rmtree(path)
+        elif path.exists():
+            path.unlink()
+
+    def _move_to_trash(self, path: Path) -> None:
+        process = subprocess.run(
+            ("/usr/bin/gio", "trash", str(path)),
+            capture_output=True,
+            text=True,
+            errors="replace",
+            check=False,
+            timeout=120,
+        )
+        if process.returncode != 0:
+            raise OSError(process.stderr.strip() or "Verschieben in den Papierkorb fehlgeschlagen")
+
+    def _finish(self, plan: RemovalPlan, result: RemovalResult) -> RemovalResult:
+        result.receipt_path = self._write_receipt(plan, result)
+        return result
+
+    def _write_receipt(self, plan: RemovalPlan, result: RemovalResult) -> str:
+        state_directory = self.home / ".local/state/restlos/history"
+        try:
+            state_directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+            safe_id = "".join(character if character.isalnum() else "-" for character in plan.app.package_id)[:80]
+            receipt = state_directory / f"{timestamp}-{safe_id}.json"
+            payload = {
+                "schema": 1,
+                "timestamp": timestamp,
+                "application": plan.app.to_dict(),
+                "success": result.success,
+                "removed_paths": result.removed_paths,
+                "actions": [action.label for action in plan.actions],
+                "errors": result.errors,
+            }
+            receipt.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            return str(receipt)
+        except OSError:
+            return ""
+
+    @staticmethod
+    def _is_within(path: Path, root: Path) -> bool:
+        try:
+            path.relative_to(root)
+            return True
+        except ValueError:
+            return False

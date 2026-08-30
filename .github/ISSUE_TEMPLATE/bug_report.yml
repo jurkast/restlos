@@ -1,0 +1,44 @@
+name: Fehler melden
+description: Einen reproduzierbaren Fehler in Restlos melden
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für die Meldung. Sicherheitsprobleme oder private Pfade bitte gemäß SECURITY.md vertraulich melden.
+  - type: input
+    id: version
+    attributes:
+      label: Restlos-Version
+      placeholder: "1.1.0"
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Linux-System
+      placeholder: "Zorin OS / Ubuntu-Version"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Fehlerbeschreibung
+      description: Was ist passiert und was sollte stattdessen passieren?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Schritte zum Reproduzieren
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Datenschutz
+      options:
+        - label: Ich habe Benutzernamen, private Pfade und persönliche Daten entfernt.
+          required: true

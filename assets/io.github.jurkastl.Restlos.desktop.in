@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Restlos
+GenericName=App-Deinstaller
+Comment=Programme und sicher zuordenbare Restdateien vollständig entfernen
+Exec=@EXEC@
+Icon=@ICON@
+Terminal=false
+StartupNotify=true
+Categories=System;GTK;
+Keywords=deinstallieren;löschen;entfernen;uninstall;remove;cleanup;Zorin;

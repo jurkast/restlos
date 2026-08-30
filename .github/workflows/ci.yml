@@ -1,0 +1,56 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Ubuntu ${{ matrix.ubuntu }}
+    runs-on: ubuntu-${{ matrix.ubuntu }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu:
+          - "22.04"
+          - "24.04"
+
+    steps:
+      - name: Quellcode auschecken
+        uses: actions/checkout@v6
+
+      - name: Systemabhängigkeiten installieren
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes desktop-file-utils gir1.2-gtk-4.0 python3-gi
+
+      - name: Python- und Shell-Dateien prüfen
+        run: |
+          python3 -m compileall -q restlos tests
+          bash -n install.sh update.sh uninstall.sh scripts/build-release.sh
+
+      - name: Regressionstests ausführen
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Isolierte Installation prüfen
+        run: |
+          test_home="$(mktemp -d -t restlos-ci.XXXXXXXX)"
+          trap 'rm -rf -- "$test_home"' EXIT
+          RESTLOS_TEST_HOME="$test_home" HOME="$test_home" ./install.sh
+          HOME="$test_home" "$test_home/.local/bin/restlos" --version
+          RESTLOS_TEST_HOME="$test_home" HOME="$test_home" ./uninstall.sh --purge
+
+      - name: Reproduzierbares Release bauen
+        env:
+          SOURCE_DATE_EPOCH: "0"
+        run: |
+          ./scripts/build-release.sh dist
+          cd dist
+          sha256sum --check Restlos-*.sha256
+          test -z "$(find . -type d -name __pycache__ -o -type f -name '*.pyc')"

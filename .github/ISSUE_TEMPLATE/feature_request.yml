@@ -1,0 +1,24 @@
+name: Verbesserung vorschlagen
+description: Eine neue Erkennung, Plattform oder Bedienungsverbesserung vorschlagen
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Ausgangsproblem
+      description: Welches konkrete Problem soll gelöst werden?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Lösungsvorschlag
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Betroffene Installationsquelle
+      placeholder: "z. B. Lutris, Steam, DEB, portable Installation"

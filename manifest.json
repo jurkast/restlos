@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "name": "Restlos",
+  "app_id": "io.github.jurkastl.Restlos",
+  "version": "1.1.0",
+  "minimum_python": "3.10",
+  "gui": "GTK 4",
+  "homepage": "https://github.com/jurkastl/restlos",
+  "supported_sources": [
+    "APT/DEB",
+    "Flatpak",
+    "Snap",
+    "AppImage",
+    "Wine",
+    "manual",
+    "Lutris",
+    "Steam",
+    "Heroic",
+    "Bottles",
+    "PlayOnLinux",
+    "portable folders"
+  ]
+}

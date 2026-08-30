@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "restlos-uninstaller"
+version = "1.1.0"
+description = "Careful complete application remover for Zorin OS and Ubuntu"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "jurkastl" }]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/jurkastl/restlos"
+Repository = "https://github.com/jurkastl/restlos"
+Issues = "https://github.com/jurkastl/restlos/issues"
+
+[project.scripts]
+restlos = "restlos.cli:main"
+
+[tool.setuptools]
+packages = ["restlos"]
