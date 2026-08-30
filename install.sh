@@ -61,8 +61,8 @@ RESTLOS_RELEASES_HOME="${RESTLOS_APP_HOME}/releases"
 RESTLOS_RELEASE_HOME="${RESTLOS_RELEASES_HOME}/${RESTLOS_VERSION}"
 RESTLOS_APPLICATIONS_HOME="${RESTLOS_DATA_HOME}/applications"
 RESTLOS_PIXMAPS_HOME="${RESTLOS_DATA_HOME}/pixmaps"
-RESTLOS_DESKTOP_PATH="${RESTLOS_APPLICATIONS_HOME}/io.github.jurkastl.Restlos.desktop"
-RESTLOS_ICON_PATH="${RESTLOS_PIXMAPS_HOME}/io.github.jurkastl.Restlos.svg"
+RESTLOS_DESKTOP_PATH="${RESTLOS_APPLICATIONS_HOME}/io.github.jurkast.Restlos.desktop"
+RESTLOS_ICON_PATH="${RESTLOS_PIXMAPS_HOME}/io.github.jurkast.Restlos.svg"
 RESTLOS_COMMAND_PATH="${RESTLOS_BIN_HOME}/restlos"
 
 case "$RESTLOS_APP_HOME" in
@@ -82,8 +82,8 @@ for required in \
     "restlos/game_scanners.py" \
     "run_restlos.py" \
     "assets/restlos-wrapper" \
-    "assets/io.github.jurkastl.Restlos.desktop.in" \
-    "assets/io.github.jurkastl.Restlos.svg"
+    "assets/io.github.jurkast.Restlos.desktop.in" \
+    "assets/io.github.jurkast.Restlos.svg"
 do
     if [[ ! -f "${RESTLOS_SOURCE_ROOT}/${required}" ]]
     then
@@ -187,20 +187,22 @@ ln -s -- "releases/${RESTLOS_VERSION}" "$RESTLOS_CURRENT_LINK"
 mv -Tf -- "$RESTLOS_CURRENT_LINK" "${RESTLOS_APP_HOME}/current"
 
 install -m 0755 "${RESTLOS_SOURCE_ROOT}/assets/restlos-wrapper" "$RESTLOS_COMMAND_PATH"
-install -m 0644 "${RESTLOS_SOURCE_ROOT}/assets/io.github.jurkastl.Restlos.svg" "$RESTLOS_ICON_PATH"
+install -m 0644 "${RESTLOS_SOURCE_ROOT}/assets/io.github.jurkast.Restlos.svg" "$RESTLOS_ICON_PATH"
 
 RESTLOS_EXEC_SED="$(printf '%s' "$RESTLOS_COMMAND_PATH" | sed 's/[|&]/\\&/g')"
 RESTLOS_ICON_SED="$(printf '%s' "$RESTLOS_ICON_PATH" | sed 's/[|&]/\\&/g')"
-RESTLOS_DESKTOP_TEMP="${RESTLOS_APPLICATIONS_HOME}/.io.github.jurkastl.Restlos.$$.desktop"
+RESTLOS_DESKTOP_TEMP="${RESTLOS_APPLICATIONS_HOME}/.io.github.jurkast.Restlos.$$.desktop"
 sed \
     -e "s|@EXEC@|${RESTLOS_EXEC_SED}|g" \
     -e "s|@ICON@|${RESTLOS_ICON_SED}|g" \
-    "${RESTLOS_SOURCE_ROOT}/assets/io.github.jurkastl.Restlos.desktop.in" > "$RESTLOS_DESKTOP_TEMP"
+    "${RESTLOS_SOURCE_ROOT}/assets/io.github.jurkast.Restlos.desktop.in" > "$RESTLOS_DESKTOP_TEMP"
 chmod 0644 "$RESTLOS_DESKTOP_TEMP"
 mv -f -- "$RESTLOS_DESKTOP_TEMP" "$RESTLOS_DESKTOP_PATH"
 
-# Frühere lokale Vorabversionen verwendeten eine provisorische App-ID.
+# Frühere Ausgaben verwendeten die alte GitHub-Kennung oder eine provisorische App-ID.
 rm -f -- \
+    "${RESTLOS_APPLICATIONS_HOME}/io.github.jurkastl.Restlos.desktop" \
+    "${RESTLOS_PIXMAPS_HOME}/io.github.jurkastl.Restlos.svg" \
     "${RESTLOS_APPLICATIONS_HOME}/io.github.local.Restlos.desktop" \
     "${RESTLOS_PIXMAPS_HOME}/io.github.local.Restlos.svg"
 

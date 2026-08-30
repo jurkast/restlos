@@ -1,5 +1,13 @@
 # Änderungsprotokoll
 
+## 1.4.3 – 2026-08-30
+
+- GitHub-Projekt und öffentliche Autorenkennung vollständig von `jurkastl` auf `jurkast` migriert
+- neue App-ID `io.github.jurkast.Restlos` für Desktop-Eintrag, Symbol und GTK-Anwendung
+- Installer entfernt nach erfolgreichem Update alte Starter und Symbole mit `io.github.jurkastl.Restlos`
+- Scanner und Uninstaller erkennen weiterhin die bisherige sowie die provisorische App-ID
+- Projekt-, Download-, Fehler- und Sicherheitslinks zeigen auf `github.com/jurkast/restlos`
+
 ## 1.4.2 – 2026-08-30
 
 - sicherer Übergang für die geplante Änderung des GitHub-Benutzernamens von `jurkastl` zu `jurkast`

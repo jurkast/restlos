@@ -23,8 +23,8 @@ else
 fi
 RESTLOS_APP_HOME="${RESTLOS_DATA_HOME}/restlos"
 RESTLOS_COMMAND_PATH="${RESTLOS_USER_HOME}/.local/bin/restlos"
-RESTLOS_DESKTOP_PATH="${RESTLOS_DATA_HOME}/applications/io.github.jurkastl.Restlos.desktop"
-RESTLOS_ICON_PATH="${RESTLOS_DATA_HOME}/pixmaps/io.github.jurkastl.Restlos.svg"
+RESTLOS_DESKTOP_PATH="${RESTLOS_DATA_HOME}/applications/io.github.jurkast.Restlos.desktop"
+RESTLOS_ICON_PATH="${RESTLOS_DATA_HOME}/pixmaps/io.github.jurkast.Restlos.svg"
 
 case "$RESTLOS_APP_HOME" in
     ""|"/"|"${RESTLOS_USER_HOME}"|"${RESTLOS_DATA_HOME}")
@@ -45,6 +45,8 @@ rm -rf -- \
     "$RESTLOS_COMMAND_PATH" \
     "$RESTLOS_DESKTOP_PATH" \
     "$RESTLOS_ICON_PATH" \
+    "${RESTLOS_DATA_HOME}/applications/io.github.jurkastl.Restlos.desktop" \
+    "${RESTLOS_DATA_HOME}/pixmaps/io.github.jurkastl.Restlos.svg" \
     "${RESTLOS_DATA_HOME}/applications/io.github.local.Restlos.desktop" \
     "${RESTLOS_DATA_HOME}/pixmaps/io.github.local.Restlos.svg"
 

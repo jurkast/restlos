@@ -10,7 +10,7 @@ Sicherheitskorrekturen werden für die aktuelle veröffentlichte Version bereitg
 
 Bitte verwende nach Möglichkeit GitHubs Funktion **Report a vulnerability** im Bereich **Security** des Repositorys:
 
-https://github.com/jurkastl/restlos/security/advisories/new
+https://github.com/jurkast/restlos/security/advisories/new
 
 Falls diese Funktion nicht verfügbar ist, öffne ein gewöhnliches Issue mit dem Titel `Security contact requested`, aber veröffentliche dort noch keine privaten Pfade, personenbezogenen Daten, Exploitdetails oder reproduzierbaren Löschbefehle. Die weitere Abstimmung erfolgt anschließend vertraulich.
 

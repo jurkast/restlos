@@ -2,11 +2,11 @@
 
 > **Safe Linux App & Game Uninstaller**
 
-[![Tests](https://github.com/jurkastl/restlos/actions/workflows/ci.yml/badge.svg)](https://github.com/jurkastl/restlos/actions/workflows/ci.yml)
-[![GitHub Release](https://img.shields.io/github/v/release/jurkastl/restlos?include_prereleases)](https://github.com/jurkastl/restlos/releases)
+[![Tests](https://github.com/jurkast/restlos/actions/workflows/ci.yml/badge.svg)](https://github.com/jurkast/restlos/actions/workflows/ci.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/jurkast/restlos?include_prereleases)](https://github.com/jurkast/restlos/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-[Deutsch](README.md) · [Downloads](https://github.com/jurkastl/restlos/releases) · [Report a bug](https://github.com/jurkastl/restlos/issues)
+[Deutsch](README.md) · [Downloads](https://github.com/jurkast/restlos/releases) · [Report a bug](https://github.com/jurkast/restlos/issues)
 
 **Restlos Uninstaller** is a safe graphical app and game uninstaller for the major Linux distribution families. It combines software from multiple installation systems in one interface and creates a visible, selectable removal plan before making any changes.
 
@@ -39,14 +39,14 @@ Flatpak, Snap, AppImage, Wine and game-platform detection are independent of the
 
 ## Install
 
-Download the latest package from [GitHub Releases](https://github.com/jurkastl/restlos/releases). For version 1.4.2:
+Download the latest package from [GitHub Releases](https://github.com/jurkast/restlos/releases). For version 1.4.3:
 
 ```bash
-curl -LO https://github.com/jurkastl/restlos/releases/download/v1.4.2/Restlos-1.4.2.tar.gz
-curl -LO https://github.com/jurkastl/restlos/releases/download/v1.4.2/Restlos-1.4.2.sha256
-sha256sum --check Restlos-1.4.2.sha256
-tar -xzf Restlos-1.4.2.tar.gz
-cd Restlos-1.4.2
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.4.3/Restlos-1.4.3.tar.gz
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.4.3/Restlos-1.4.3.sha256
+sha256sum --check Restlos-1.4.3.sha256
+tar -xzf Restlos-1.4.3.tar.gz
+cd Restlos-1.4.3
 ./install.sh
 ```
 

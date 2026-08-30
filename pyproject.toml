@@ -4,18 +4,18 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "restlos-uninstaller"
-version = "1.4.2"
+version = "1.4.3"
 description = "Safe Linux app and game uninstaller with residual cleanup and recovery"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "jurkastl" }]
+authors = [{ name = "jurkast" }]
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/jurkastl/restlos"
-Repository = "https://github.com/jurkastl/restlos"
-Issues = "https://github.com/jurkastl/restlos/issues"
+Homepage = "https://github.com/jurkast/restlos"
+Repository = "https://github.com/jurkast/restlos"
+Issues = "https://github.com/jurkast/restlos/issues"
 
 [project.scripts]
 restlos = "restlos.cli:main"
