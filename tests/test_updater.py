@@ -19,13 +19,20 @@ from restlos.updater import (
     checksum_from_file,
     extract_release_archive,
     parse_version,
+    RELEASES_APIS,
     select_update,
 )
 
 
-def release_payload(version: str, *, draft: bool = False, prerelease: bool = True) -> dict[str, object]:
+def release_payload(
+    version: str,
+    *,
+    draft: bool = False,
+    prerelease: bool = True,
+    repository: str = "jurkast/restlos",
+) -> dict[str, object]:
     archive_name = f"Restlos-{version}.tar.gz"
-    prefix = f"https://github.com/jurkastl/restlos/releases/download/v{version}"
+    prefix = f"https://github.com/{repository}/releases/download/v{version}"
     return {
         "tag_name": f"v{version}",
         "name": f"Restlos {version} (Beta)",
@@ -94,6 +101,23 @@ class UpdaterTests(unittest.TestCase):
     def test_no_downgrade_or_same_version(self) -> None:
         self.assertIsNone(select_update([release_payload("1.2.0"), release_payload("1.1.0")], "1.2.0"))
 
+    def test_legacy_repository_release_is_accepted_during_username_migration(self) -> None:
+        selected = select_update(
+            [release_payload("1.4.2", repository="jurkastl/restlos")],
+            "1.4.1",
+        )
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.version, "1.4.2")
+        self.assertEqual(selected.page_url, "https://github.com/jurkastl/restlos/releases/tag/v1.4.2")
+
+    def test_release_from_unrelated_repository_is_rejected(self) -> None:
+        self.assertIsNone(
+            select_update(
+                [release_payload("1.4.2", repository="someone-else/restlos")],
+                "1.4.1",
+            )
+        )
+
     def test_checksum_must_name_exact_archive(self) -> None:
         content = ("b" * 64 + "  Restlos-1.3.0.tar.gz\n").encode("ascii")
         self.assertEqual(checksum_from_file(content, "Restlos-1.3.0.tar.gz"), "b" * 64)
@@ -126,6 +150,32 @@ class UpdaterTests(unittest.TestCase):
         selected = UpdateClient("1.2.0", opener=opener).check()
         self.assertIsNotNone(selected)
         self.assertEqual(selected.version, "1.3.0")
+
+    def test_client_falls_back_to_legacy_namespace_before_username_change(self) -> None:
+        content = json.dumps([release_payload("1.4.2", repository="jurkastl/restlos")]).encode("utf-8")
+        requested: list[str] = []
+
+        def opener(request, **_kwargs):
+            requested.append(request.full_url)
+            if request.full_url == RELEASES_APIS[0]:
+                raise OSError("new namespace is not active yet")
+            return FakeResponse(content, request.full_url)
+
+        selected = UpdateClient("1.4.1", opener=opener).check()
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.version, "1.4.2")
+        self.assertEqual(requested, list(RELEASES_APIS))
+
+    def test_client_checks_legacy_namespace_when_new_namespace_has_no_release(self) -> None:
+        legacy_content = json.dumps([release_payload("1.4.2", repository="jurkastl/restlos")]).encode("utf-8")
+
+        def opener(request, **_kwargs):
+            content = b"[]" if request.full_url == RELEASES_APIS[0] else legacy_content
+            return FakeResponse(content, request.full_url)
+
+        selected = UpdateClient("1.4.1", opener=opener).check()
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected.version, "1.4.2")
 
     def test_untrusted_redirect_is_rejected(self) -> None:
         def opener(_request, **_kwargs):
