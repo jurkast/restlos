@@ -44,10 +44,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           version="${GITHUB_REF_NAME#v}"
-          gh release create "$GITHUB_REF_NAME" \
-            "dist/Restlos-${version}.tar.gz" \
-            "dist/Restlos-${version}.sha256" \
-            --verify-tag \
-            --prerelease \
-            --generate-notes \
-            --title "Restlos ${version} (Beta)"
+          archive="dist/Restlos-${version}.tar.gz"
+          checksum="dist/Restlos-${version}.sha256"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1
+          then
+            gh release upload "$GITHUB_REF_NAME" \
+              "$archive" \
+              "$checksum" \
+              --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              "$archive" \
+              "$checksum" \
+              --verify-tag \
+              --prerelease \
+              --generate-notes \
+              --title "Restlos ${version} (Beta)"
+          fi
