@@ -1,12 +1,14 @@
 [Desktop Entry]
 Type=Application
 Version=1.0
-Name=Restlos
-GenericName=App-Deinstaller
-Comment=Programme und sicher zuordenbare Restdateien vollständig entfernen
+Name=Restlos Uninstaller
+GenericName=Linux App & Game Uninstaller
+GenericName[de]=Linux-App- und Spiele-Deinstaller
+Comment=Safe Linux App & Game Uninstaller
+Comment[de]=Linux-Programme, Spiele und sicher zuordenbare Restdateien vollständig entfernen
 Exec=@EXEC@
 Icon=@ICON@
 Terminal=false
 StartupNotify=true
 Categories=System;GTK;
-Keywords=deinstallieren;löschen;entfernen;uninstall;remove;cleanup;Linux;
+Keywords=uninstaller;uninstall;remove;cleanup;games;Linux;deinstallieren;löschen;entfernen;Spiele;

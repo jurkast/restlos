@@ -4,7 +4,7 @@ import argparse
 import json
 import sys
 
-from . import __version__
+from . import APP_TAGLINE, __version__
 from .analyzer import RemovalAnalyzer
 from .recovery import RecoveryManager
 from .remover import RemovalExecutor
@@ -15,7 +15,7 @@ from .utils import format_size
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="restlos",
-        description="Anwendungen und sicher zuordenbare Restdateien unter Linux entfernen.",
+        description=APP_TAGLINE,
     )
     parser.add_argument("--version", action="version", version=f"Restlos {__version__}")
     subparsers = parser.add_subparsers(dest="command")

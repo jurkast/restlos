@@ -9,7 +9,7 @@ RESTLOS_DRY_RUN=0
 usage()
 {
     printf '%s\n' \
-        "Restlos für den aktuellen Benutzer installieren oder aktualisieren." \
+        "Restlos Uninstaller für den aktuellen Benutzer installieren oder aktualisieren." \
         "" \
         "Aufruf: ./install.sh [--dry-run]"
 }
@@ -127,7 +127,7 @@ then
 fi
 
 printf '%s\n' \
-    "Restlos ${RESTLOS_VERSION} wird für den aktuellen Benutzer installiert." \
+    "Restlos Uninstaller ${RESTLOS_VERSION} wird für den aktuellen Benutzer installiert." \
     "  Programm: ${RESTLOS_APP_HOME}" \
     "  Befehl:   ${RESTLOS_COMMAND_PATH}" \
     "  Menü:     ${RESTLOS_DESKTOP_PATH}"
@@ -215,4 +215,4 @@ fi
 
 printf '%s\n' \
     "Installation abgeschlossen." \
-    "Starte Restlos über das Anwendungsmenü oder mit: ${RESTLOS_COMMAND_PATH}"
+    "Starte Restlos Uninstaller über das Anwendungsmenü oder mit: ${RESTLOS_COMMAND_PATH}"

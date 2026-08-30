@@ -5,11 +5,11 @@ set -euo pipefail
 usage()
 {
     printf '%s\n' \
-        "Restlos aus einer neuen Quellkopie oder einem Release-Archiv aktualisieren." \
+        "Restlos Uninstaller aus einer neuen Quellkopie oder einem Release-Archiv aktualisieren." \
         "" \
-        "Lokal:  ./update.sh /pfad/zu/restlos-1.4.0.tar.gz [SHA256]" \
-        "Ordner: ./update.sh /pfad/zu/restlos-1.4.0" \
-        "Web:    ./update.sh https://server/restlos-1.4.0.tar.gz SHA256" \
+        "Lokal:  ./update.sh /pfad/zu/restlos-1.4.1.tar.gz [SHA256]" \
+        "Ordner: ./update.sh /pfad/zu/restlos-1.4.1" \
+        "Web:    ./update.sh https://server/restlos-1.4.1.tar.gz SHA256" \
         "" \
         "Bei Web-Downloads ist die erwartete SHA-256-Prüfsumme Pflicht."
 }

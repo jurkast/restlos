@@ -11,7 +11,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Gdk", "4.0")
 from gi.repository import Gdk, Gio, GLib, Gtk, Pango  # noqa: E402
 
-from . import APP_ID, APP_NAME, PROJECT_URL, __version__
+from . import APP_ID, APP_NAME, APP_TAGLINE, PROJECT_URL, __version__
 from .analyzer import RemovalAnalyzer
 from .models import AppRecord, Confidence, RecoveryRecord, RemovalPlan, RemovalResult, RestoreResult, SourceKind
 from .recovery import RecoveryManager
@@ -137,7 +137,7 @@ class TargetRow(Gtk.ListBoxRow):
 
 class MainWindow(Gtk.ApplicationWindow):
     def __init__(self, application: Gtk.Application) -> None:
-        super().__init__(application=application, title=f"{APP_NAME} – App-Deinstaller")
+        super().__init__(application=application, title=APP_NAME)
         self.set_default_size(1120, 760)
         self.set_size_request(840, 560)
         self.apps: list[AppRecord] = []
@@ -156,7 +156,7 @@ class MainWindow(Gtk.ApplicationWindow):
         title = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         main = Gtk.Label(label=APP_NAME)
         main.add_css_class("app-name")
-        sub = Gtk.Label(label="Vollständiger App-Deinstaller")
+        sub = Gtk.Label(label=APP_TAGLINE)
         sub.add_css_class("muted")
         title.append(main)
         title.append(sub)
@@ -172,7 +172,7 @@ class MainWindow(Gtk.ApplicationWindow):
         menu.append("Protokollordner öffnen", "app.open-history")
         menu.append("Nach Updates suchen …", "app.check-updates")
         menu.append("Automatisch nach Updates suchen", "app.automatic-updates")
-        menu.append("Über Restlos", "app.about")
+        menu.append("Über Restlos Uninstaller", "app.about")
         menu_button = Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu)
         header.pack_end(menu_button)
         self.set_titlebar(header)
@@ -1000,7 +1000,7 @@ class RestlosApplication(Gtk.Application):
             modal=True,
             program_name=APP_NAME,
             version=__version__,
-            comments="Sicherer vollständiger App-Deinstaller für große Linux-Distributionsfamilien.",
+            comments=APP_TAGLINE,
             copyright="2026 – lokale Open-Source-Ausgabe",
             license_type=Gtk.License.MIT_X11,
         )
@@ -1073,7 +1073,7 @@ class RestlosApplication(Gtk.Application):
         if release is None:
             if not automatic:
                 self._show_message(
-                    "Restlos ist aktuell",
+                    "Restlos Uninstaller ist aktuell",
                     f"Version {__version__} ist die neueste verfügbare Ausgabe.",
                     Gtk.MessageType.INFO,
                 )
@@ -1096,7 +1096,7 @@ class RestlosApplication(Gtk.Application):
             modal=True,
             message_type=Gtk.MessageType.INFO,
             buttons=Gtk.ButtonsType.NONE,
-            text=f"Restlos {release.version} ist verfügbar",
+            text=f"Restlos Uninstaller {release.version} ist verfügbar",
             secondary_text=details,
         )
         dialog.add_button("Später", Gtk.ResponseType.CANCEL)
@@ -1125,7 +1125,7 @@ class RestlosApplication(Gtk.Application):
         dialog = Gtk.Dialog(
             transient_for=self.props.active_window,
             modal=True,
-            title=f"Restlos {release.version} installieren",
+            title=f"Restlos Uninstaller {release.version} installieren",
         )
         dialog.set_deletable(False)
         content = dialog.get_content_area()
@@ -1146,7 +1146,7 @@ class RestlosApplication(Gtk.Application):
         progress_bar = Gtk.ProgressBar()
         progress_bar.set_size_request(460, -1)
         content.append(progress_bar)
-        note = Gtk.Label(label="Das aktuelle Restlos bleibt bei einem Fehler weiterhin startfähig.")
+        note = Gtk.Label(label="Der aktuelle Restlos Uninstaller bleibt bei einem Fehler weiterhin startfähig.")
         note.add_css_class("muted")
         content.append(note)
         self._update_progress_dialog = dialog
@@ -1200,10 +1200,10 @@ class RestlosApplication(Gtk.Application):
             modal=True,
             message_type=Gtk.MessageType.INFO,
             buttons=Gtk.ButtonsType.NONE,
-            text=f"Restlos {version} wurde installiert",
+            text=f"Restlos Uninstaller {version} wurde installiert",
             secondary_text=(
                 "Einstellungen und Entfernungshistorie wurden beibehalten. "
-                "Starte Restlos jetzt neu, damit die neue Version aktiv wird."
+                "Starte Restlos Uninstaller jetzt neu, damit die neue Version aktiv wird."
             ),
         )
         dialog.add_button("Später neu starten", Gtk.ResponseType.CLOSE)
@@ -1224,7 +1224,7 @@ class RestlosApplication(Gtk.Application):
         except OSError as error:
             self._show_message(
                 "Neustart fehlgeschlagen",
-                f"Starte Restlos manuell neu. Technisches Detail: {error}",
+                f"Starte Restlos Uninstaller manuell neu. Technisches Detail: {error}",
                 Gtk.MessageType.ERROR,
             )
 

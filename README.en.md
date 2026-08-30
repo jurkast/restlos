@@ -1,4 +1,6 @@
-# Restlos
+# Restlos Uninstaller
+
+> **Safe Linux App & Game Uninstaller**
 
 [![Tests](https://github.com/jurkastl/restlos/actions/workflows/ci.yml/badge.svg)](https://github.com/jurkastl/restlos/actions/workflows/ci.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/jurkastl/restlos?include_prereleases)](https://github.com/jurkastl/restlos/releases)
@@ -6,7 +8,7 @@
 
 [Deutsch](README.md) · [Downloads](https://github.com/jurkastl/restlos/releases) · [Report a bug](https://github.com/jurkastl/restlos/issues)
 
-Restlos is a graphical application remover for the major Linux distribution families. It combines applications and games from multiple installation systems in one interface and creates a visible, selectable removal plan before making any changes.
+**Restlos Uninstaller** is a safe graphical app and game uninstaller for the major Linux distribution families. It combines software from multiple installation systems in one interface and creates a visible, selectable removal plan before making any changes.
 
 > **Public beta:** Restlos can permanently delete data. Carefully review the removal plan and back up important files and save games first. The application interface is currently German; contributions for full localisation are welcome.
 
@@ -37,14 +39,14 @@ Flatpak, Snap, AppImage, Wine and game-platform detection are independent of the
 
 ## Install
 
-Download the latest package from [GitHub Releases](https://github.com/jurkastl/restlos/releases). For version 1.4.0:
+Download the latest package from [GitHub Releases](https://github.com/jurkastl/restlos/releases). For version 1.4.1:
 
 ```bash
-curl -LO https://github.com/jurkastl/restlos/releases/download/v1.4.0/Restlos-1.4.0.tar.gz
-curl -LO https://github.com/jurkastl/restlos/releases/download/v1.4.0/Restlos-1.4.0.sha256
-sha256sum --check Restlos-1.4.0.sha256
-tar -xzf Restlos-1.4.0.tar.gz
-cd Restlos-1.4.0
+curl -LO https://github.com/jurkastl/restlos/releases/download/v1.4.1/Restlos-1.4.1.tar.gz
+curl -LO https://github.com/jurkastl/restlos/releases/download/v1.4.1/Restlos-1.4.1.sha256
+sha256sum --check Restlos-1.4.1.sha256
+tar -xzf Restlos-1.4.1.tar.gz
+cd Restlos-1.4.1
 ./install.sh
 ```
 
@@ -64,7 +66,7 @@ sudo pacman -S python-gobject gtk4 polkit
 sudo zypper install python3-gobject typelib-1_0-Gtk-4_0 polkit
 ```
 
-Restlos is then available from the application menu or as `~/.local/bin/restlos`.
+Restlos Uninstaller is then available from the application menu. The existing update-compatible terminal command remains `~/.local/bin/restlos`.
 
 ## Recovery and post-removal verification
 

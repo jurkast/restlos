@@ -1,5 +1,12 @@
 # Änderungsprotokoll
 
+## 1.4.1 – 2026-08-30
+
+- international verständlicher sichtbarer Name **Restlos Uninstaller**
+- neuer Untertitel **Safe Linux App & Game Uninstaller** in Programmfenster, Desktop-Eintrag und Projektbeschreibung
+- zusätzliche englische und deutsche Suchbegriffe für Anwendungsmenüs
+- technische App-ID, Terminalbefehl, Installationspfade und Benutzerdaten bleiben für störungsfreie Updates unverändert
+
 ## 1.4.0 – 2026-08-30
 
 - neues grafisches Wiederherstellungszentrum für von Restlos in den Desktop-Papierkorb verschobene Benutzerdaten

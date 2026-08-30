@@ -6,9 +6,8 @@ restlos_app_root="${restlos_data_home}/restlos/current"
 
 if [ ! -f "${restlos_app_root}/run_restlos.py" ]
 then
-    printf '%s\n' "Restlos ist unvollständig installiert: ${restlos_app_root}" >&2
+    printf '%s\n' "Restlos Uninstaller ist unvollständig installiert: ${restlos_app_root}" >&2
     exit 1
 fi
 
 exec python3 -I -B "${restlos_app_root}/run_restlos.py" "$@"
-

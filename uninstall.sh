@@ -54,10 +54,10 @@ then
         "${RESTLOS_USER_HOME}/.config/restlos" \
         "${RESTLOS_USER_HOME}/.cache/restlos" \
         "${RESTLOS_STATE_HOME}/restlos"
-    printf '%s\n' "Restlos einschließlich Einstellungen und Historie wurde entfernt."
+    printf '%s\n' "Restlos Uninstaller einschließlich Einstellungen und Historie wurde entfernt."
 else
     printf '%s\n' \
-        "Restlos wurde entfernt." \
+        "Restlos Uninstaller wurde entfernt." \
         "Die Entfernungshistorie bleibt erhalten. Für vollständiges Löschen: ./uninstall.sh --purge"
 fi
 

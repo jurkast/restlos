@@ -1,4 +1,6 @@
-# Restlos
+# Restlos Uninstaller
+
+> **Safe Linux App & Game Uninstaller**
 
 [![Tests](https://github.com/jurkastl/restlos/actions/workflows/ci.yml/badge.svg)](https://github.com/jurkastl/restlos/actions/workflows/ci.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/jurkastl/restlos?include_prereleases)](https://github.com/jurkastl/restlos/releases)
@@ -6,7 +8,7 @@
 
 [English](README.en.md) · [Downloads](https://github.com/jurkastl/restlos/releases) · [Fehler melden](https://github.com/jurkastl/restlos/issues)
 
-Restlos ist ein grafischer App-Deinstaller für die großen Linux-Distributionsfamilien. Die Anwendung führt Programme aus mehreren Installationssystemen in einer Oberfläche zusammen und erstellt vor jeder Entfernung einen sichtbaren, abwählbaren Löschplan.
+**Restlos Uninstaller** ist ein sicherer grafischer App- und Spiele-Deinstaller für die großen Linux-Distributionsfamilien. Die Anwendung führt Programme und Spiele aus mehreren Installationssystemen in einer Oberfläche zusammen und erstellt vor jeder Entfernung einen sichtbaren, abwählbaren Löschplan.
 
 > **Öffentliche Beta:** Restlos kann Daten dauerhaft löschen. Prüfe den angezeigten Löschplan aufmerksam und sichere wichtige Spielstände und Dateien vorher.
 
@@ -49,14 +51,14 @@ Flatpak, Snap, AppImage, Wine sowie die Spieleplattformen funktionieren unabhän
 
 ## Installation
 
-Die aktuelle Ausgabe von der [Release-Seite](https://github.com/jurkastl/restlos/releases) herunterladen. Für Version 1.4.0 geht es auch vollständig im Terminal:
+Die aktuelle Ausgabe von der [Release-Seite](https://github.com/jurkastl/restlos/releases) herunterladen. Für Version 1.4.1 geht es auch vollständig im Terminal:
 
 ```bash
-curl -LO https://github.com/jurkastl/restlos/releases/download/v1.4.0/Restlos-1.4.0.tar.gz
-curl -LO https://github.com/jurkastl/restlos/releases/download/v1.4.0/Restlos-1.4.0.sha256
-sha256sum --check Restlos-1.4.0.sha256
-tar -xzf Restlos-1.4.0.tar.gz
-cd Restlos-1.4.0
+curl -LO https://github.com/jurkastl/restlos/releases/download/v1.4.1/Restlos-1.4.1.tar.gz
+curl -LO https://github.com/jurkastl/restlos/releases/download/v1.4.1/Restlos-1.4.1.sha256
+sha256sum --check Restlos-1.4.1.sha256
+tar -xzf Restlos-1.4.1.tar.gz
+cd Restlos-1.4.1
 ./install.sh
 ```
 
@@ -66,7 +68,7 @@ Alternativ das Release grafisch entpacken, im entpackten Ordner ein Terminal öf
 ./install.sh
 ```
 
-Danach erscheint **Restlos** im Anwendungsmenü. Alternativ lässt es sich mit `~/.local/bin/restlos` starten.
+Danach erscheint **Restlos Uninstaller** im Anwendungsmenü. Der bestehende, updatekompatible Terminalbefehl bleibt `~/.local/bin/restlos`.
 
 Falls GTK/PyGObject fehlt, gilt je nach Distribution einer dieser Befehle:
 
@@ -115,13 +117,13 @@ Unter **Menü → Automatisch nach Updates suchen** lässt sich die Startprüfun
 Der Installer ist weiterhin versionsbasiert und kann auch manuell ausgeführt werden. Eine neue lokale Ausgabe wird so installiert:
 
 ```bash
-./update.sh /pfad/zu/Restlos-1.4.0.tar.gz
+./update.sh /pfad/zu/Restlos-1.4.1.tar.gz
 ```
 
 Für ein über HTTPS geladenes Release ist eine bekannte SHA-256-Prüfsumme Pflicht:
 
 ```bash
-./update.sh 'https://github.com/jurkastl/restlos/releases/download/v1.4.0/Restlos-1.4.0.tar.gz' '64-stellige-sha256-prüfsumme'
+./update.sh 'https://github.com/jurkastl/restlos/releases/download/v1.4.1/Restlos-1.4.1.tar.gz' '64-stellige-sha256-prüfsumme'
 ```
 
 Updates werden zuerst in ein neues Versionsverzeichnis kopiert und geprüft. Erst danach wird der `current`-Symlink atomar umgeschaltet. Einstellungen und Entfernungshistorie bleiben erhalten.
