@@ -20,8 +20,10 @@ from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 
-REPOSITORY = "jurkastl/restlos"
-RELEASES_API = f"https://api.github.com/repos/{REPOSITORY}/releases?per_page=10"
+REPOSITORIES = ("jurkast/restlos", "jurkastl/restlos")
+REPOSITORY = REPOSITORIES[0]
+RELEASES_APIS = tuple(f"https://api.github.com/repos/{repository}/releases?per_page=10" for repository in REPOSITORIES)
+RELEASES_API = RELEASES_APIS[0]
 CHECK_INTERVAL_SECONDS = 24 * 60 * 60
 RETRY_INTERVAL_SECONDS = 4 * 60 * 60
 NETWORK_TIMEOUT_SECONDS = 10.0
@@ -101,14 +103,13 @@ def select_update(
         if archive is None or checksum is None:
             continue
 
-        prefix = f"https://github.com/{REPOSITORY}/releases/download/v{version}/"
         archive_url = archive.get("browser_download_url")
         checksum_url = checksum.get("browser_download_url")
+        repository = _release_repository(version, archive_name, checksum_name, archive_url, checksum_url)
         digest_value = archive.get("digest")
         archive_size = archive.get("size")
         if (
-            archive_url != f"{prefix}{archive_name}"
-            or checksum_url != f"{prefix}{checksum_name}"
+            repository is None
             or not isinstance(digest_value, str)
             or not digest_value.startswith("sha256:")
             or not _DIGEST_PATTERN.fullmatch(digest_value.removeprefix("sha256:"))
@@ -124,7 +125,7 @@ def select_update(
             version=version,
             title=title.strip()[:200] if isinstance(title, str) and title.strip() else f"Restlos {version}",
             notes=notes.strip()[:20_000] if isinstance(notes, str) else "",
-            page_url=f"https://github.com/{REPOSITORY}/releases/tag/v{version}",
+            page_url=f"https://github.com/{repository}/releases/tag/v{version}",
             archive_url=archive_url,
             checksum_url=checksum_url,
             archive_digest=digest_value.removeprefix("sha256:").lower(),
@@ -146,6 +147,20 @@ def _asset_by_name(raw_assets: object, name: str) -> dict[str, object] | None:
         if isinstance(asset, dict) and asset.get("name") == name and asset.get("state") == "uploaded"
     ]
     return matches[0] if len(matches) == 1 else None
+
+
+def _release_repository(
+    version: str,
+    archive_name: str,
+    checksum_name: str,
+    archive_url: object,
+    checksum_url: object,
+) -> str | None:
+    for repository in REPOSITORIES:
+        prefix = f"https://github.com/{repository}/releases/download/v{version}/"
+        if archive_url == f"{prefix}{archive_name}" and checksum_url == f"{prefix}{checksum_name}":
+            return repository
+    return None
 
 
 def checksum_from_file(content: bytes, archive_name: str) -> str:
@@ -253,14 +268,27 @@ class UpdateClient:
         self._runner = runner
 
     def check(self) -> ReleaseInfo | None:
-        content = self._read_bytes(RELEASES_API, MAX_METADATA_BYTES)
-        try:
-            releases = json.loads(content.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError) as error:
-            raise UpdateError("GitHub hat keine gültigen Release-Daten geliefert.") from error
-        if not isinstance(releases, list):
-            raise UpdateError("GitHub hat ein unerwartetes Release-Format geliefert.")
-        return select_update(releases, self.current_version, include_prereleases=True)
+        failures: list[UpdateError] = []
+        had_valid_response = False
+        for releases_api in RELEASES_APIS:
+            try:
+                content = self._read_bytes(releases_api, MAX_METADATA_BYTES)
+                releases = json.loads(content.decode("utf-8"))
+                if not isinstance(releases, list):
+                    raise UpdateError("GitHub hat ein unerwartetes Release-Format geliefert.")
+            except (UnicodeDecodeError, json.JSONDecodeError) as error:
+                failures.append(UpdateError("GitHub hat keine gültigen Release-Daten geliefert."))
+                continue
+            except UpdateError as error:
+                failures.append(error)
+                continue
+            had_valid_response = True
+            selected = select_update(releases, self.current_version, include_prereleases=True)
+            if selected is not None:
+                return selected
+        if had_valid_response:
+            return None
+        raise failures[-1] if failures else UpdateError("GitHub hat keine Release-Daten geliefert.")
 
     def install(
         self,
