@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "restlos-uninstaller"
-version = "1.5.0"
+version = "1.6.0"
 description = "Safe Linux app and game uninstaller with residual cleanup and recovery"
 readme = "README.md"
 requires-python = ">=3.10"

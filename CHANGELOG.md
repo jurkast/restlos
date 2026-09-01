@@ -1,5 +1,15 @@
 # Änderungsprotokoll
 
+## 1.6.0 – 2026-09-01
+
+- natives `.deb`-Paket für Zorin OS, Ubuntu und Debian mit automatischer Abhängigkeitsauflösung
+- AppStream-Metadaten für eine vollständige Darstellung in grafischen Softwareverwaltungen
+- systemweiter Starter, Anwendungssymbol und absolute Desktop-Verknüpfung unter der bestehenden App-ID
+- paketverwaltete Installationen weisen auf neue Systempakete hin und überschreiben sich nicht mit dem Benutzer-Updater
+- reproduzierbarer Debian-Paketbau und automatische Veröffentlichung des `.deb`-Pakets bei neuen GitHub-Releases
+- vorbereitete Snapcraft-Konfiguration mit der für einen System-Uninstaller erforderlichen Classic-Confinement-Prüfung
+- zusätzliche Paketierungs- und Updatekanaltests
+
 ## 1.5.0 – 2026-09-01
 
 - vollständige deutsche und englische grafische Oberfläche mit Auswahl für Systemsprache, Deutsch oder Englisch

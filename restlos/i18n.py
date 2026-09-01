@@ -165,6 +165,7 @@ ENGLISH: dict[str, str] = {
     "Installiert: {version}": "Installed: {version}",
     "Verfügbar: {version}": "Available: {version}",
     "Das Update wird nur nach deiner Bestätigung geladen, per SHA-256 geprüft und atomar installiert.": "The update is downloaded only after your confirmation, verified with SHA-256, and installed atomically.",
+    "Diese Installation wird vom Linux-Paketmanager verwaltet. Öffne die Release-Seite, um das neue Systempaket zu beziehen.": "This installation is managed by the Linux package manager. Open the release page to get the new system package.",
     "Restlos Uninstaller {version} ist verfügbar": "Restlos Uninstaller {version} is available",
     "Restlos Uninstaller {version} installieren": "Install Restlos Uninstaller {version}",
     "Restlos Uninstaller {version} wurde installiert": "Restlos Uninstaller {version} was installed",

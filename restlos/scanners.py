@@ -6,7 +6,7 @@ import shutil
 from collections import defaultdict
 from pathlib import Path
 
-from . import APP_ID, LEGACY_APP_IDS
+from . import APP_ID, LEGACY_APP_IDS, SELF_PACKAGE_IDS
 from .game_scanners import GamePlatformScanner
 from .models import AppRecord, SourceKind
 from .package_managers import PACKAGE_ID_PATTERN, native_package_adapter
@@ -33,7 +33,10 @@ class ApplicationScanner:
 
         deduplicated: dict[str, AppRecord] = {}
         for record in records:
-            if record.package_id in {APP_ID, *LEGACY_APP_IDS} or record.key.endswith(":restlos"):
+            if (
+                record.package_id in {APP_ID, *LEGACY_APP_IDS, *SELF_PACKAGE_IDS}
+                or record.key.endswith(":restlos")
+            ):
                 continue
             current = deduplicated.get(record.key)
             if current is None or len(record.description) > len(current.description):

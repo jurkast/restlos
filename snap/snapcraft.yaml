@@ -1,0 +1,50 @@
+name: restlos-uninstaller
+base: core24
+version: "1.6.0"
+summary: Safe Linux App & Game Uninstaller
+description: |
+  Restlos Uninstaller detects applications and games from native package
+  managers, Flatpak, Snap, AppImage, Wine, Steam, Lutris, Heroic, Bottles,
+  PlayOnLinux, and portable folders. It shows a reviewable removal plan before
+  changing the system and supports optional Safety Backups.
+grade: devel
+confinement: classic
+
+apps:
+  restlos-uninstaller:
+    command: usr/bin/restlos-snap
+    desktop: usr/share/applications/io.github.jurkast.Restlos.desktop
+
+parts:
+  restlos:
+    plugin: nil
+    source: .
+    build-packages:
+      - desktop-file-utils
+    stage-packages:
+      - gir1.2-gtk-4.0
+      - policykit-1
+      - python3
+      - python3-gi
+    override-build: |
+      install -d -m 0755 \
+        "$CRAFT_PART_INSTALL/usr/bin" \
+        "$CRAFT_PART_INSTALL/usr/lib/restlos" \
+        "$CRAFT_PART_INSTALL/usr/share/applications" \
+        "$CRAFT_PART_INSTALL/usr/share/icons/hicolor/scalable/apps" \
+        "$CRAFT_PART_INSTALL/usr/share/metainfo"
+      cp -a restlos "$CRAFT_PART_INSTALL/usr/lib/restlos/restlos"
+      install -m 0755 run_restlos.py "$CRAFT_PART_INSTALL/usr/lib/restlos/run_restlos.py"
+      install -m 0755 packaging/snap/restlos-wrapper "$CRAFT_PART_INSTALL/usr/bin/restlos-snap"
+      sed \
+        -e 's|@EXEC@|restlos-uninstaller|g' \
+        -e 's|@ICON@|io.github.jurkast.Restlos|g' \
+        assets/io.github.jurkast.Restlos.desktop.in \
+        > "$CRAFT_PART_INSTALL/usr/share/applications/io.github.jurkast.Restlos.desktop"
+      install -m 0644 assets/io.github.jurkast.Restlos.svg \
+        "$CRAFT_PART_INSTALL/usr/share/icons/hicolor/scalable/apps/io.github.jurkast.Restlos.svg"
+      sed \
+        -e "s|@VERSION@|${SNAPCRAFT_PROJECT_VERSION}|g" \
+        -e 's|@DATE@|2026-09-01|g' \
+        assets/io.github.jurkast.Restlos.metainfo.xml.in \
+        > "$CRAFT_PART_INSTALL/usr/share/metainfo/io.github.jurkast.Restlos.metainfo.xml"

@@ -53,10 +53,12 @@ for item in \
     assets \
     install.sh \
     manifest.json \
+    packaging \
     pyproject.toml \
     restlos \
     run_restlos.py \
     scripts \
+    snap \
     tests \
     uninstall.sh \
     update.sh
@@ -71,6 +73,7 @@ chmod 0755 \
     "$RESTLOS_STAGING_ROOT/update.sh" \
     "$RESTLOS_STAGING_ROOT/uninstall.sh" \
     "$RESTLOS_STAGING_ROOT/run_restlos.py" \
+    "$RESTLOS_STAGING_ROOT/scripts/build-deb.sh" \
     "$RESTLOS_STAGING_ROOT/scripts/build-release.sh"
 
 RESTLOS_ARCHIVE="${RESTLOS_OUTPUT_ROOT}/${RESTLOS_RELEASE_NAME}.tar.gz"

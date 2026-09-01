@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
+from . import SELF_PACKAGE_IDS
 from .models import AppRecord, SourceKind
 from .utils import DesktopEntry, run_command
 
@@ -64,6 +65,8 @@ class PackageManagerAdapter(ABC):
 
     def is_protected(self, package: str) -> bool:
         normalized = _canonical_package_name(package).casefold()
+        if normalized in {item.casefold() for item in SELF_PACKAGE_IDS}:
+            return True
         return any(
             normalized == protected.casefold()
             or normalized.startswith(f"{protected.casefold()}-")

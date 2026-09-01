@@ -19,7 +19,7 @@ from .models import AppRecord, Confidence, RecoveryRecord, RemovalPlan, RemovalR
 from .recovery import RecoveryManager
 from .remover import RemovalExecutor
 from .scanners import ApplicationScanner
-from .updater import ReleaseInfo, UpdateClient, UpdateError, UpdateState
+from .updater import ReleaseInfo, UpdateClient, UpdateError, UpdateState, is_system_managed_install
 from .utils import format_size
 
 
@@ -1213,11 +1213,22 @@ class RestlosApplication(Gtk.Application):
         notes = release.notes.strip()
         if len(notes) > 1400:
             notes = notes[:1397].rstrip() + " …"
+        system_managed = is_system_managed_install()
+        update_note = (
+            _(
+                "Diese Installation wird vom Linux-Paketmanager verwaltet. Öffne die Release-Seite, "
+                "um das neue Systempaket zu beziehen."
+            )
+            if system_managed
+            else _(
+                "Das Update wird nur nach deiner Bestätigung geladen, per SHA-256 geprüft und atomar installiert."
+            )
+        )
         details = (
             _("Installiert: {version}", version=__version__) + "\n"
             + _("Verfügbar: {version}", version=release.version) + "\n\n"
             + (notes or _("Änderungen stehen auf der Release-Seite.")) + "\n\n"
-            + _("Das Update wird nur nach deiner Bestätigung geladen, per SHA-256 geprüft und atomar installiert.")
+            + update_note
         )
         dialog = Gtk.MessageDialog(
             transient_for=self.props.active_window,
@@ -1228,10 +1239,14 @@ class RestlosApplication(Gtk.Application):
             secondary_text=details,
         )
         dialog.add_button(_("Später"), Gtk.ResponseType.CANCEL)
-        dialog.add_button(_("Release-Seite"), Gtk.ResponseType.HELP)
-        install = dialog.add_button(_("Herunterladen und installieren"), Gtk.ResponseType.ACCEPT)
-        install.add_css_class("suggested-action")
-        dialog.set_default_response(Gtk.ResponseType.ACCEPT)
+        release_page = dialog.add_button(_("Release-Seite"), Gtk.ResponseType.HELP)
+        if system_managed:
+            release_page.add_css_class("suggested-action")
+            dialog.set_default_response(Gtk.ResponseType.HELP)
+        else:
+            install = dialog.add_button(_("Herunterladen und installieren"), Gtk.ResponseType.ACCEPT)
+            install.add_css_class("suggested-action")
+            dialog.set_default_response(Gtk.ResponseType.ACCEPT)
         dialog.connect("response", self._on_update_response, release)
         dialog.present()
 

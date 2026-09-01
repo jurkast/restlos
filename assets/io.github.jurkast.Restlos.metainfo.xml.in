@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.jurkast.Restlos</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Restlos Uninstaller</name>
+  <summary>Safely remove Linux applications, games, and their associated data</summary>
+  <summary xml:lang="de">Linux-Programme, Spiele und zugehörige Daten sicher entfernen</summary>
+  <developer id="io.github.jurkast">
+    <name>jurkast</name>
+  </developer>
+  <description>
+    <p>
+      Restlos Uninstaller combines applications and games from native package managers,
+      Flatpak, Snap, AppImage, Wine, Steam, Lutris, Heroic, Bottles, and PlayOnLinux in
+      one graphical interface. It always presents a reviewable removal plan before it
+      changes the system.
+    </p>
+    <p xml:lang="de">
+      Restlos Uninstaller führt Anwendungen und Spiele aus nativen Paketmanagern,
+      Flatpak, Snap, AppImage, Wine, Steam, Lutris, Heroic, Bottles und PlayOnLinux in
+      einer grafischen Oberfläche zusammen. Vor jeder Änderung zeigt es einen
+      überprüfbaren Löschplan an.
+    </p>
+    <ul>
+      <li>Review paths, confidence, reasons, and sizes before removal</li>
+      <li>Create optional Safety Backups of suitable settings and save data</li>
+      <li>Restore Trash entries and Safety Backups without overwriting files</li>
+      <li>Use the complete German or English interface</li>
+      <li xml:lang="de">Pfade, Trefferqualität, Begründungen und Größen vor der Entfernung prüfen</li>
+      <li xml:lang="de">Optionale Safety Backups geeigneter Einstellungen und Spielstände erstellen</li>
+      <li xml:lang="de">Papierkorbdaten und Safety Backups ohne Überschreiben wiederherstellen</li>
+      <li xml:lang="de">Die vollständige deutsche oder englische Oberfläche verwenden</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">io.github.jurkast.Restlos.desktop</launchable>
+  <provides>
+    <binary>restlos</binary>
+  </provides>
+  <categories>
+    <category>System</category>
+    <category>Utility</category>
+  </categories>
+  <keywords>
+    <keyword>uninstaller</keyword>
+    <keyword>cleanup</keyword>
+    <keyword>games</keyword>
+    <keyword>linux</keyword>
+    <keyword xml:lang="de">deinstallieren</keyword>
+    <keyword xml:lang="de">löschen</keyword>
+  </keywords>
+  <url type="homepage">https://github.com/jurkast/restlos</url>
+  <url type="bugtracker">https://github.com/jurkast/restlos/issues</url>
+  <url type="help">https://github.com/jurkast/restlos/blob/main/README.en.md</url>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="@VERSION@" date="@DATE@" type="development">
+      <description>
+        <p>Public beta with native Debian packaging and software-store metadata.</p>
+        <p xml:lang="de">Öffentliche Beta mit nativer Debian-Paketierung und Software-Store-Metadaten.</p>
+      </description>
+    </release>
+  </releases>
+</component>

@@ -110,6 +110,7 @@ class PackageManagerTests(unittest.TestCase):
     def test_arch_package_ids_may_contain_at_sign(self) -> None:
         adapter = PacmanAdapter()
         self.assertFalse(adapter.is_protected("example@app"))
+        self.assertTrue(adapter.is_protected("restlos-uninstaller"))
 
 
 if __name__ == "__main__":

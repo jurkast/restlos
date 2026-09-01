@@ -6,7 +6,7 @@ import re
 import unittest
 from pathlib import Path
 
-from restlos import APP_ID, APP_NAME, APP_TAGLINE, LEGACY_APP_IDS, __version__
+from restlos import APP_ID, APP_NAME, APP_TAGLINE, LEGACY_APP_IDS, SELF_PACKAGE_IDS, __version__
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -34,6 +34,7 @@ class BrandingTests(unittest.TestCase):
         self.assertEqual(APP_ID, "io.github.jurkast.Restlos")
         self.assertIn("io.github.jurkastl.Restlos", LEGACY_APP_IDS)
         self.assertIn("io.github.local.Restlos", LEGACY_APP_IDS)
+        self.assertIn("restlos-uninstaller", SELF_PACKAGE_IDS)
 
         project = (PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8")
         project_version = re.search(r'^version = "([^"]+)"$', project, re.MULTILINE)

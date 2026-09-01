@@ -19,7 +19,7 @@ jobs:
       - name: Systemabhängigkeiten installieren
         run: |
           sudo apt-get update
-          sudo apt-get install --yes desktop-file-utils gir1.2-gtk-4.0 python3-gi
+          sudo apt-get install --yes appstream desktop-file-utils gir1.2-gtk-4.0 python3-gi
 
       - name: Tag und Projektversion vergleichen
         run: |
@@ -29,15 +29,18 @@ jobs:
       - name: Vollständige Prüfung
         run: |
           python3 -m compileall -q restlos tests
-          bash -n install.sh update.sh uninstall.sh scripts/build-release.sh
+          bash -n install.sh update.sh uninstall.sh scripts/build-deb.sh scripts/build-release.sh
           python3 -m unittest discover -s tests -v
 
       - name: Release-Dateien erzeugen
         run: |
           export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
           ./scripts/build-release.sh dist
+          ./scripts/build-deb.sh dist
           cd dist
           sha256sum --check Restlos-*.sha256
+          sha256sum --check restlos-uninstaller_*_all.deb.sha256
+          dpkg-deb --info restlos-uninstaller_*_all.deb
 
       - name: GitHub-Release veröffentlichen
         env:
@@ -46,16 +49,22 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           archive="dist/Restlos-${version}.tar.gz"
           checksum="dist/Restlos-${version}.sha256"
+          deb="dist/restlos-uninstaller_${version}-1_all.deb"
+          deb_checksum="${deb}.sha256"
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1
           then
             gh release upload "$GITHUB_REF_NAME" \
               "$archive" \
               "$checksum" \
+              "$deb" \
+              "$deb_checksum" \
               --clobber
           else
             gh release create "$GITHUB_REF_NAME" \
               "$archive" \
               "$checksum" \
+              "$deb" \
+              "$deb_checksum" \
               --verify-tag \
               --prerelease \
               --generate-notes \

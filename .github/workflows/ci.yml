@@ -28,12 +28,12 @@ jobs:
       - name: Systemabhängigkeiten installieren
         run: |
           sudo apt-get update
-          sudo apt-get install --yes desktop-file-utils gir1.2-gtk-4.0 python3-gi
+          sudo apt-get install --yes appstream desktop-file-utils gir1.2-gtk-4.0 python3-gi
 
       - name: Python- und Shell-Dateien prüfen
         run: |
           python3 -m compileall -q restlos tests
-          bash -n install.sh update.sh uninstall.sh scripts/build-release.sh
+          bash -n install.sh update.sh uninstall.sh scripts/build-deb.sh scripts/build-release.sh
 
       - name: Regressionstests ausführen
         run: python3 -m unittest discover -s tests -v
@@ -54,6 +54,17 @@ jobs:
           cd dist
           sha256sum --check Restlos-*.sha256
           test -z "$(find . -type d -name __pycache__ -o -type f -name '*.pyc')"
+
+      - name: Debian-Paket bauen und prüfen
+        env:
+          SOURCE_DATE_EPOCH: "0"
+        run: |
+          ./scripts/build-deb.sh dist
+          package="$(find dist -maxdepth 1 -type f -name 'restlos-uninstaller_*_all.deb' -print -quit)"
+          test -n "$package"
+          (cd dist && sha256sum --check "$(basename "$package").sha256")
+          dpkg-deb --info "$package"
+          dpkg-deb --contents "$package"
 
   native-adapters:
     name: ${{ matrix.name }}-Adapter

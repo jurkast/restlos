@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+
+snap_root="${SNAP:?Restlos must be started by snapd}"
+export RESTLOS_UPDATE_CHANNEL=snap
+exec "${snap_root}/usr/bin/python3" -I -B "${snap_root}/usr/lib/restlos/run_restlos.py" "$@"

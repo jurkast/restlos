@@ -7,9 +7,9 @@ usage()
     printf '%s\n' \
         "Restlos Uninstaller aus einer neuen Quellkopie oder einem Release-Archiv aktualisieren." \
         "" \
-        "Lokal:  ./update.sh /pfad/zu/Restlos-1.5.0.tar.gz [SHA256]" \
-        "Ordner: ./update.sh /pfad/zu/Restlos-1.5.0" \
-        "Web:    ./update.sh https://server/Restlos-1.5.0.tar.gz SHA256" \
+        "Lokal:  ./update.sh /pfad/zu/Restlos-1.6.0.tar.gz [SHA256]" \
+        "Ordner: ./update.sh /pfad/zu/Restlos-1.6.0" \
+        "Web:    ./update.sh https://server/Restlos-1.6.0.tar.gz SHA256" \
         "" \
         "Bei Web-Downloads ist die erwartete SHA-256-Prüfsumme Pflicht."
 }

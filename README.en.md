@@ -41,14 +41,31 @@ Flatpak, Snap, AppImage, Wine and game-platform detection are independent of the
 
 ## Install
 
-Download the latest package from [GitHub Releases](https://github.com/jurkast/restlos/releases). For version 1.5.0:
+Download the latest package from [GitHub Releases](https://github.com/jurkast/restlos/releases).
+
+### Zorin OS, Ubuntu, and Debian
+
+Install the native Debian package through the graphical software manager or with APT. APT resolves the required GTK and Python dependencies automatically:
 
 ```bash
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.5.0/Restlos-1.5.0.tar.gz
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.5.0/Restlos-1.5.0.sha256
-sha256sum --check Restlos-1.5.0.sha256
-tar -xzf Restlos-1.5.0.tar.gz
-cd Restlos-1.5.0
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.6.0/restlos-uninstaller_1.6.0-1_all.deb
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.6.0/restlos-uninstaller_1.6.0-1_all.deb.sha256
+sha256sum --check restlos-uninstaller_1.6.0-1_all.deb.sha256
+sudo apt install ./restlos-uninstaller_1.6.0-1_all.deb
+```
+
+The application-menu entry explicitly starts the system package. If an older per-user installation still exists at `~/.local/bin/restlos`, use `/usr/bin/restlos` to address the package version unambiguously.
+
+### Universal archive
+
+For Fedora, Arch Linux, openSUSE, or a per-user installation:
+
+```bash
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.6.0/Restlos-1.6.0.tar.gz
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.6.0/Restlos-1.6.0.sha256
+sha256sum --check Restlos-1.6.0.sha256
+tar -xzf Restlos-1.6.0.tar.gz
+cd Restlos-1.6.0
 ./install.sh
 ```
 
@@ -68,7 +85,7 @@ sudo pacman -S python-gobject gtk4 polkit
 sudo zypper install python3-gobject typelib-1_0-Gtk-4_0 polkit
 ```
 
-Restlos Uninstaller is then available from the application menu. The existing update-compatible terminal command remains `~/.local/bin/restlos`.
+Restlos Uninstaller is then available from the application menu. For the universal archive, the update-compatible terminal command remains `~/.local/bin/restlos`.
 
 ## Safety Backup, recovery and post-removal verification
 

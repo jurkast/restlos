@@ -18,6 +18,7 @@ from restlos.updater import (
     UpdateState,
     checksum_from_file,
     extract_release_archive,
+    is_system_managed_install,
     parse_version,
     RELEASES_APIS,
     select_update,
@@ -86,6 +87,12 @@ class UpdaterTests(unittest.TestCase):
             parse_version("1.2")
         with self.assertRaises(ValueError):
             parse_version("1.2.3-beta")
+
+    def test_system_managed_install_channels_are_explicit(self) -> None:
+        self.assertTrue(is_system_managed_install({"RESTLOS_UPDATE_CHANNEL": "deb"}))
+        self.assertTrue(is_system_managed_install({"RESTLOS_UPDATE_CHANNEL": " SNAP "}))
+        self.assertFalse(is_system_managed_install({}))
+        self.assertFalse(is_system_managed_install({"RESTLOS_UPDATE_CHANNEL": "portable"}))
 
     def test_highest_complete_release_is_selected(self) -> None:
         incomplete = release_payload("1.5.0")

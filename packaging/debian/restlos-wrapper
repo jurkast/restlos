@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+export RESTLOS_UPDATE_CHANNEL=deb
+exec python3 -I -B /usr/lib/restlos/run_restlos.py "$@"

@@ -36,6 +36,7 @@ MAX_ARCHIVE_MEMBERS = 5000
 
 _VERSION_PATTERN = re.compile(r"^(?:v)?([0-9]+)\.([0-9]+)\.([0-9]+)$")
 _DIGEST_PATTERN = re.compile(r"^[a-fA-F0-9]{64}$")
+SYSTEM_UPDATE_CHANNELS = frozenset({"apt", "deb", "snap", "system"})
 
 
 class UpdateError(RuntimeError):
@@ -62,6 +63,13 @@ class InstallResult:
 
 
 ProgressCallback = Callable[[str, float], None]
+
+
+def is_system_managed_install(environ: dict[str, str] | None = None) -> bool:
+    """Return whether updates must be installed by a system package manager."""
+    environment = os.environ if environ is None else environ
+    channel = environment.get("RESTLOS_UPDATE_CHANNEL", "").strip().casefold()
+    return channel in SYSTEM_UPDATE_CHANNELS
 
 
 def parse_version(value: str) -> tuple[int, int, int]:
