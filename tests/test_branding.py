@@ -6,7 +6,7 @@ import re
 import unittest
 from pathlib import Path
 
-from restlos import APP_ID, APP_NAME, APP_TAGLINE, __version__
+from restlos import APP_ID, APP_NAME, APP_TAGLINE, LEGACY_APP_IDS, __version__
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -23,15 +23,17 @@ class BrandingTests(unittest.TestCase):
 
         desktop = configparser.ConfigParser(interpolation=None)
         desktop.optionxform = str
-        desktop.read(PROJECT_ROOT / "assets/io.github.jurkastl.Restlos.desktop.in", encoding="utf-8")
+        desktop.read(PROJECT_ROOT / "assets/io.github.jurkast.Restlos.desktop.in", encoding="utf-8")
         entry = desktop["Desktop Entry"]
         self.assertEqual(entry["Name"], APP_NAME)
         self.assertEqual(entry["Comment"], APP_TAGLINE)
         self.assertIn("uninstaller", entry["Keywords"].casefold())
         self.assertIn("games", entry["Keywords"].casefold())
 
-    def test_rebrand_keeps_update_and_data_identifiers_stable(self) -> None:
-        self.assertEqual(APP_ID, "io.github.jurkastl.Restlos")
+    def test_github_identity_and_legacy_app_ids_are_consistent(self) -> None:
+        self.assertEqual(APP_ID, "io.github.jurkast.Restlos")
+        self.assertIn("io.github.jurkastl.Restlos", LEGACY_APP_IDS)
+        self.assertIn("io.github.local.Restlos", LEGACY_APP_IDS)
 
         project = (PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8")
         project_version = re.search(r'^version = "([^"]+)"$', project, re.MULTILINE)
