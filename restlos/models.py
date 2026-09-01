@@ -113,20 +113,6 @@ class RemovalPlan:
 
 
 @dataclass(slots=True)
-class RemovalResult:
-    success: bool
-    removed_paths: list[str] = field(default_factory=list)
-    action_output: list[str] = field(default_factory=list)
-    errors: list[str] = field(default_factory=list)
-    recovery_items: list[RecoveryItem] = field(default_factory=list)
-    residual_paths: list[str] = field(default_factory=list)
-    kept_paths: list[str] = field(default_factory=list)
-    verification_error: str = ""
-    recovery_id: str = ""
-    receipt_path: str = ""
-
-
-@dataclass(slots=True)
 class RecoveryItem:
     original_path: str
     trash_uri: str
@@ -135,6 +121,33 @@ class RecoveryItem:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass(slots=True)
+class BackupItem:
+    original_path: str
+    archive_member: str
+    size: int = 0
+    restored_at: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class RemovalResult:
+    success: bool
+    removed_paths: list[str] = field(default_factory=list)
+    action_output: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    recovery_items: list[RecoveryItem] = field(default_factory=list)
+    backup_items: list[BackupItem] = field(default_factory=list)
+    backup_path: str = ""
+    residual_paths: list[str] = field(default_factory=list)
+    kept_paths: list[str] = field(default_factory=list)
+    verification_error: str = ""
+    recovery_id: str = ""
+    receipt_path: str = ""
 
 
 @dataclass(slots=True)
@@ -147,12 +160,22 @@ class RecoveryRecord:
     source: str
     success: bool
     items: list[RecoveryItem] = field(default_factory=list)
+    backup_items: list[BackupItem] = field(default_factory=list)
+    backup_path: str = ""
     actions: list[str] = field(default_factory=list)
     residual_paths: list[str] = field(default_factory=list)
 
     @property
-    def available_items(self) -> list[RecoveryItem]:
+    def available_trash_items(self) -> list[RecoveryItem]:
         return [item for item in self.items if item.trash_uri and not item.restored_at]
+
+    @property
+    def available_backup_items(self) -> list[BackupItem]:
+        return [item for item in self.backup_items if item.archive_member and not item.restored_at]
+
+    @property
+    def available_items(self) -> list[RecoveryItem | BackupItem]:
+        return [*self.available_trash_items, *self.available_backup_items]
 
     @property
     def available_size(self) -> int:

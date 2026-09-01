@@ -76,6 +76,8 @@ for required in \
     "restlos/__init__.py" \
     "restlos/gui.py" \
     "restlos/analyzer.py" \
+    "restlos/backup.py" \
+    "restlos/i18n.py" \
     "restlos/package_managers.py" \
     "restlos/recovery.py" \
     "restlos/updater.py" \

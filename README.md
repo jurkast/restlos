@@ -10,7 +10,7 @@
 
 **Restlos Uninstaller** ist ein sicherer grafischer App- und Spiele-Deinstaller für die großen Linux-Distributionsfamilien. Die Anwendung führt Programme und Spiele aus mehreren Installationssystemen in einer Oberfläche zusammen und erstellt vor jeder Entfernung einen sichtbaren, abwählbaren Löschplan.
 
-> **Öffentliche Beta:** Restlos kann Daten dauerhaft löschen. Prüfe den angezeigten Löschplan aufmerksam und sichere wichtige Spielstände und Dateien vorher.
+> **Öffentliche Beta:** Restlos kann Daten dauerhaft löschen. Prüfe den angezeigten Löschplan aufmerksam. Für geeignete Einstellungen und Spielstände kann Restlos vorab ein lokales Safety Backup erstellen.
 
 ## Funktionen
 
@@ -30,10 +30,12 @@
 - simuliert jede native Paketentfernung und blockiert sie, falls kritische Systemkomponenten betroffen wären
 - erkennt laufende Prozesse innerhalb der ausgewählten Programmordner
 - unterstützt dauerhafte Löschung oder eine wiederherstellbare Entfernung über den Desktop-Papierkorb
-- bietet ein Wiederherstellungszentrum, das vorhandene Dateien niemals überschreibt
+- erstellt auf Wunsch vor endgültigem Löschen ein Safety Backup geeigneter Einstellungen, Anwendungsdaten und Spielstände
+- bietet ein Wiederherstellungszentrum für Papierkorbdaten und Safety Backups, das vorhandene Dateien niemals überschreibt
 - kontrolliert nach der Entfernung erneut auf zuordenbare Restpfade und trennt diese von bewusst beibehaltenen Daten
 - schreibt ein lokales Ergebnis- und Wiederherstellungsprotokoll nach `~/.local/state/restlos/history`
 - bietet zusätzlich eine Terminaloberfläche für Listen und Löschpläne
+- besitzt eine vollständige deutsche und englische Oberfläche mit Sprachwahl im Menü
 - sucht beim Start höchstens einmal täglich nach neuen Releases und bietet geprüfte Updates nach Bestätigung direkt an
 
 Restlos zeigt bewusst **Anwendungen, Spiele und eigenständige Programmumgebungen** und keine Tausenden Bibliotheks- oder Kernelpakete an.
@@ -51,14 +53,14 @@ Flatpak, Snap, AppImage, Wine sowie die Spieleplattformen funktionieren unabhän
 
 ## Installation
 
-Die aktuelle Ausgabe von der [Release-Seite](https://github.com/jurkast/restlos/releases) herunterladen. Für Version 1.4.3 geht es auch vollständig im Terminal:
+Die aktuelle Ausgabe von der [Release-Seite](https://github.com/jurkast/restlos/releases) herunterladen. Für Version 1.5.0 geht es auch vollständig im Terminal:
 
 ```bash
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.4.3/Restlos-1.4.3.tar.gz
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.4.3/Restlos-1.4.3.sha256
-sha256sum --check Restlos-1.4.3.sha256
-tar -xzf Restlos-1.4.3.tar.gz
-cd Restlos-1.4.3
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.5.0/Restlos-1.5.0.tar.gz
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.5.0/Restlos-1.5.0.sha256
+sha256sum --check Restlos-1.5.0.sha256
+tar -xzf Restlos-1.5.0.tar.gz
+cd Restlos-1.5.0
 ./install.sh
 ```
 
@@ -93,20 +95,28 @@ restlos list
 restlos analyze "Programmname"
 restlos analyze "Programmname" --json
 restlos remove "Programmname" --yes
+restlos remove "Programmname" --yes --backup
 restlos remove "Programmname" --yes --trash
 restlos recovery list
 restlos recovery restore WIEDERHERSTELLUNGS-ID --yes
+restlos --language en list
 ```
 
-`remove --yes` löscht die im Plan ausgewählten Benutzerdaten dauerhaft. Ohne `--yes` wird nichts verändert.
+`remove --yes` löscht die im Plan ausgewählten Benutzerdaten dauerhaft. `--backup` sichert vorher geeignete Einstellungen und Spielstände; `--trash` verwendet stattdessen den Papierkorb. Ohne `--yes` wird nichts verändert. `--backup` und `--trash` können nicht kombiniert werden.
 
-## Wiederherstellung und Kontrollscan
+## Safety Backup, Wiederherstellung und Kontrollscan
 
-In der grafischen Oberfläche ist die wiederherstellbare Entfernung die sichere Voreinstellung. Restlos verschiebt ausgewählte Benutzerdaten mit GIO in den Desktop-Papierkorb und protokolliert die genaue Papierkorb-URI zusammen mit dem ursprünglichen Pfad. Unter **Menü → Wiederherstellungszentrum …** können noch vorhandene Einträge zurückgeholt werden. Existiert am ursprünglichen Ort bereits eine Datei oder ein Ordner, verweigert Restlos das Überschreiben.
+In der grafischen Oberfläche ist die wiederherstellbare Entfernung die sichere Voreinstellung. Restlos verschiebt ausgewählte Benutzerdaten mit GIO in den Desktop-Papierkorb und protokolliert die genaue Papierkorb-URI zusammen mit dem ursprünglichen Pfad. Wird die endgültige Löschung ausgewählt, kann zusätzlich das standardmäßig angebotene **Safety Backup** aktiviert werden. Nach dem Beenden zugehöriger Prozesse sichert es geeignete Einstellungen, Anwendungsdaten und Spielstände vor der ersten Lösch- oder Paketaktion. Cache, Installer, Cover, Starter und eigentliche Programm- beziehungsweise Spieleordner werden nicht unnötig kopiert. Schlägt das Backup fehl, beginnt die Entfernung nicht.
+
+Unter **Menü → Wiederherstellungszentrum …** können noch vorhandene Papierkorbdaten und Safety Backups zurückgeholt werden. Existiert am ursprünglichen Ort bereits eine Datei oder ein Ordner, verweigert Restlos das Überschreiben. Die privaten Archive liegen unter `~/.local/state/restlos/backups` und werden nicht in eine Cloud übertragen.
 
 Nach jeder Entfernung durchsucht Restlos die bekannten Dateiquellen erneut, ohne die Paketaktion nochmals aufzurufen. Zusätzliche Treffer werden im Ergebnis als mögliche Restpfade angezeigt. Pfade, die im Löschplan bewusst abgewählt wurden, erscheinen getrennt als beibehaltene Daten.
 
-Die Wiederherstellung betrifft ausschließlich in den Papierkorb verschobene Dateien und Ordner. Native Pakete, Flatpaks, Snaps sowie entfernte Einträge in Lutris- oder Heroic-Bibliotheken werden nicht automatisch erneut installiert beziehungsweise angelegt. Wird der Papierkorb außerhalb von Restlos geleert, sind die betreffenden Daten nicht mehr wiederherstellbar.
+Die Wiederherstellung betrifft ausschließlich in den Papierkorb verschobene oder im Safety Backup gesicherte Dateien und Ordner. Native Pakete, Flatpaks, Snaps sowie entfernte Einträge in Lutris- oder Heroic-Bibliotheken werden nicht automatisch erneut installiert beziehungsweise angelegt. Wird der Papierkorb außerhalb von Restlos geleert, sind die betreffenden Papierkorbdaten nicht mehr wiederherstellbar.
+
+## Sprache
+
+Restlos verwendet standardmäßig die Systemsprache und unterstützt Deutsch und Englisch. Unter **Menü → Sprache** kann eine Sprache dauerhaft ausgewählt werden; nach einem Neustart ist die gesamte Oberfläche umgestellt. Im Terminal gilt die Auswahl ebenfalls, kann aber für einen einzelnen Aufruf überschrieben werden, etwa mit `restlos --language en list`.
 
 ## Updates
 
@@ -117,13 +127,13 @@ Unter **Menü → Automatisch nach Updates suchen** lässt sich die Startprüfun
 Der Installer ist weiterhin versionsbasiert und kann auch manuell ausgeführt werden. Eine neue lokale Ausgabe wird so installiert:
 
 ```bash
-./update.sh /pfad/zu/Restlos-1.4.3.tar.gz
+./update.sh /pfad/zu/Restlos-1.5.0.tar.gz
 ```
 
 Für ein über HTTPS geladenes Release ist eine bekannte SHA-256-Prüfsumme Pflicht:
 
 ```bash
-./update.sh 'https://github.com/jurkast/restlos/releases/download/v1.4.3/Restlos-1.4.3.tar.gz' '64-stellige-sha256-prüfsumme'
+./update.sh 'https://github.com/jurkast/restlos/releases/download/v1.5.0/Restlos-1.5.0.tar.gz' '64-stellige-sha256-prüfsumme'
 ```
 
 Updates werden zuerst in ein neues Versionsverzeichnis kopiert und geprüft. Erst danach wird der `current`-Symlink atomar umgeschaltet. Einstellungen und Entfernungshistorie bleiben erhalten.
@@ -146,7 +156,7 @@ Restlos führt niemals den Starter einer zu untersuchenden Anwendung aus. Paketk
 
 Treffer mit der Einstufung **prüfen** sind standardmäßig abgewählt. Gemeinsame Wine-Präfixe werden nicht als Ganzes gelöscht; darin wird nur ein eindeutig passender Programmordner vorgeschlagen. Für Systempakete erscheint bei Bedarf die normale PolicyKit-Passwortabfrage.
 
-Die Wiederherstellung prüft, ob Papierkorb-URI und gespeicherter Ursprungsort weiterhin zusammengehören. Bereits neu angelegte Dateien und Ordner werden nicht überschrieben. Protokolle werden atomar mit nur für den Benutzer lesbaren Rechten geschrieben.
+Die Wiederherstellung prüft, ob Papierkorb-URI und gespeicherter Ursprungsort weiterhin zusammengehören. Safety Backups folgen beim Erstellen keinen Symlinks, nehmen keine Spezialdateien auf, prüfen beim Wiederherstellen Archivmanifest und Pfade und bleiben innerhalb des ursprünglichen Benutzerpfads. Bereits neu angelegte Dateien und Ordner werden nicht überschrieben. Archive und Protokolle werden mit nur für den Benutzer lesbaren Rechten geschrieben.
 
 ## Technische Grenze
 

@@ -17,9 +17,11 @@ if [[ -n "${RESTLOS_TEST_HOME:-}" ]]
 then
     RESTLOS_DATA_HOME="${RESTLOS_USER_HOME}/.local/share"
     RESTLOS_STATE_HOME="${RESTLOS_USER_HOME}/.local/state"
+    RESTLOS_CONFIG_HOME="${RESTLOS_USER_HOME}/.config"
 else
     RESTLOS_DATA_HOME="${XDG_DATA_HOME:-${RESTLOS_USER_HOME}/.local/share}"
     RESTLOS_STATE_HOME="${XDG_STATE_HOME:-${RESTLOS_USER_HOME}/.local/state}"
+    RESTLOS_CONFIG_HOME="${XDG_CONFIG_HOME:-${RESTLOS_USER_HOME}/.config}"
 fi
 RESTLOS_APP_HOME="${RESTLOS_DATA_HOME}/restlos"
 RESTLOS_COMMAND_PATH="${RESTLOS_USER_HOME}/.local/bin/restlos"
@@ -53,7 +55,7 @@ rm -rf -- \
 if (( RESTLOS_PURGE == 1 ))
 then
     rm -rf -- \
-        "${RESTLOS_USER_HOME}/.config/restlos" \
+        "${RESTLOS_CONFIG_HOME}/restlos" \
         "${RESTLOS_USER_HOME}/.cache/restlos" \
         "${RESTLOS_STATE_HOME}/restlos"
     printf '%s\n' "Restlos Uninstaller einschließlich Einstellungen und Historie wurde entfernt."

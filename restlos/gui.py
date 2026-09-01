@@ -13,6 +13,8 @@ from gi.repository import Gdk, Gio, GLib, Gtk, Pango  # noqa: E402
 
 from . import APP_ID, APP_NAME, APP_TAGLINE, PROJECT_URL, __version__
 from .analyzer import RemovalAnalyzer
+from .backup import BackupManager
+from .i18n import LanguageSettings, display_text, translate as _
 from .models import AppRecord, Confidence, RecoveryRecord, RemovalPlan, RemovalResult, RestoreResult, SourceKind
 from .recovery import RecoveryManager
 from .remover import RemovalExecutor
@@ -81,7 +83,7 @@ class ApplicationRow(Gtk.ListBoxRow):
         name.set_ellipsize(Pango.EllipsizeMode.END)
         name.add_css_class("app-name")
         labels.append(name)
-        source = Gtk.Label(label=f"{record.source.value} · {record.package_id}", xalign=0)
+        source = Gtk.Label(label=f"{display_text(record.source.value)} · {record.package_id}", xalign=0)
         source.set_ellipsize(Pango.EllipsizeMode.END)
         source.add_css_class("muted")
         labels.append(source)
@@ -109,7 +111,7 @@ class TargetRow(Gtk.ListBoxRow):
         path_label.set_ellipsize(Pango.EllipsizeMode.END)
         path_label.set_tooltip_text(str(target.path))
         labels.append(path_label)
-        reason = Gtk.Label(label=target.reason, xalign=0)
+        reason = Gtk.Label(label=display_text(target.reason), xalign=0)
         reason.add_css_class("muted")
         labels.append(reason)
         box.append(labels)
@@ -118,7 +120,7 @@ class TargetRow(Gtk.ListBoxRow):
         side.set_valign(Gtk.Align.CENTER)
         size = Gtk.Label(label=format_size(target.size), xalign=1)
         side.append(size)
-        confidence = Gtk.Label(label=target.confidence.value, xalign=1)
+        confidence = Gtk.Label(label=display_text(target.confidence.value), xalign=1)
         confidence.add_css_class(
             {
                 Confidence.CERTAIN: "confidence-certain",
@@ -163,16 +165,26 @@ class MainWindow(Gtk.ApplicationWindow):
         header.set_title_widget(title)
 
         self.refresh_button = Gtk.Button.new_from_icon_name("view-refresh-symbolic")
-        self.refresh_button.set_tooltip_text("Programmliste neu einlesen")
+        self.refresh_button.set_tooltip_text(_("Programmliste neu einlesen"))
         self.refresh_button.connect("clicked", lambda _button: self._load_applications())
         header.pack_start(self.refresh_button)
 
         menu = Gio.Menu()
-        menu.append("Wiederherstellungszentrum …", "app.recovery")
-        menu.append("Protokollordner öffnen", "app.open-history")
-        menu.append("Nach Updates suchen …", "app.check-updates")
-        menu.append("Automatisch nach Updates suchen", "app.automatic-updates")
-        menu.append("Über Restlos Uninstaller", "app.about")
+        menu.append(_("Wiederherstellungszentrum …"), "app.recovery")
+        menu.append(_("Protokollordner öffnen"), "app.open-history")
+        menu.append(_("Nach Updates suchen …"), "app.check-updates")
+        menu.append(_("Automatisch nach Updates suchen"), "app.automatic-updates")
+        language_menu = Gio.Menu()
+        for label, language in (
+            (_("Systemsprache"), "system"),
+            (_("Deutsch"), "de"),
+            (_("Englisch"), "en"),
+        ):
+            item = Gio.MenuItem.new(label, None)
+            item.set_action_and_target_value("app.language", GLib.Variant.new_string(language))
+            language_menu.append_item(item)
+        menu.append_submenu(_("Sprache"), language_menu)
+        menu.append(_("Über Restlos Uninstaller"), "app.about")
         menu_button = Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu)
         header.pack_end(menu_button)
         self.set_titlebar(header)
@@ -193,26 +205,26 @@ class MainWindow(Gtk.ApplicationWindow):
         sidebar.set_margin_end(8)
 
         self.search = Gtk.SearchEntry()
-        self.search.set_placeholder_text("Programme durchsuchen …")
+        self.search.set_placeholder_text(_("Programme durchsuchen …"))
         self.search.connect("search-changed", self._on_search_changed)
         sidebar.append(self.search)
 
         filter_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        sources = ["Alle Quellen", *(source.value for source in SourceKind)]
+        sources = [_("Alle Quellen"), *(display_text(source.value) for source in SourceKind)]
         self.source_filter = Gtk.DropDown.new_from_strings(sources)
         self.source_filter.set_hexpand(True)
-        self.source_filter.set_tooltip_text("Nach Installationsquelle filtern")
+        self.source_filter.set_tooltip_text(_("Nach Installationsquelle filtern"))
         self.source_filter.connect("notify::selected", lambda *_args: self.app_list.invalidate_filter())
         filter_bar.append(self.source_filter)
-        folder_button = Gtk.Button(label="Ordner prüfen …")
-        folder_button.set_tooltip_text("Einen nicht erkannten Programm- oder Spieleordner manuell analysieren")
+        folder_button = Gtk.Button(label=_("Ordner prüfen …"))
+        folder_button.set_tooltip_text(_("Einen nicht erkannten Programm- oder Spieleordner manuell analysieren"))
         folder_button.connect("clicked", self._choose_folder)
         filter_bar.append(folder_button)
         sidebar.append(filter_bar)
 
         self.scan_status = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.scan_spinner = Gtk.Spinner()
-        self.scan_status_label = Gtk.Label(label="Programme werden eingelesen …", xalign=0)
+        self.scan_status_label = Gtk.Label(label=_("Programme werden eingelesen …"), xalign=0)
         self.scan_status_label.set_hexpand(True)
         self.scan_status_label.add_css_class("muted")
         self.scan_status.append(self.scan_spinner)
@@ -227,7 +239,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.app_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
         self.app_list.set_filter_func(self._filter_application)
         self.app_list.connect("row-selected", self._on_app_selected)
-        placeholder = Gtk.Label(label="Keine passenden Programme gefunden")
+        placeholder = Gtk.Label(label=_("Keine passenden Programme gefunden"))
         placeholder.set_margin_top(28)
         placeholder.add_css_class("muted")
         self.app_list.set_placeholder(placeholder)
@@ -251,10 +263,10 @@ class MainWindow(Gtk.ApplicationWindow):
         image.set_pixel_size(72)
         image.add_css_class("muted")
         box.append(image)
-        title = Gtk.Label(label="Programm auswählen")
+        title = Gtk.Label(label=_("Programm auswählen"))
         title.add_css_class("empty-title")
         box.append(title)
-        note = Gtk.Label(label="Restlos erstellt zuerst einen überprüfbaren Löschplan.")
+        note = Gtk.Label(label=_("Restlos erstellt zuerst einen überprüfbaren Löschplan."))
         note.add_css_class("muted")
         box.append(note)
         return box
@@ -288,7 +300,7 @@ class MainWindow(Gtk.ApplicationWindow):
         meta.append(self.detail_id)
         labels.append(meta)
         hero.append(labels)
-        self.analyze_button = Gtk.Button(label="Erneut analysieren")
+        self.analyze_button = Gtk.Button(label=_("Erneut analysieren"))
         self.analyze_button.set_valign(Gtk.Align.START)
         self.analyze_button.connect("clicked", lambda _button: self._analyze_current())
         hero.append(self.analyze_button)
@@ -300,7 +312,7 @@ class MainWindow(Gtk.ApplicationWindow):
         outer.append(self.warning_box)
 
         section = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        section_title = Gtk.Label(label="Löschplan", xalign=0)
+        section_title = Gtk.Label(label=_("Löschplan"), xalign=0)
         section_title.add_css_class("section-title")
         section_title.set_hexpand(True)
         section.append(section_title)
@@ -324,20 +336,28 @@ class MainWindow(Gtk.ApplicationWindow):
         outer.append(scroll)
 
         options = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        self.permanent_check = Gtk.CheckButton(label="Benutzerdaten endgültig löschen (keine Wiederherstellung)")
+        self.permanent_check = Gtk.CheckButton(label=_("Benutzerdaten endgültig löschen (keine Papierkorb-Wiederherstellung)"))
         self.permanent_check.set_active(False)
+        self.permanent_check.connect("toggled", self._permanent_mode_changed)
         options.append(self.permanent_check)
-        self.process_check = Gtk.CheckButton(label="Zugehörige laufende Prozesse automatisch beenden")
+        self.backup_check = Gtk.CheckButton(label=_("Safety Backup vor endgültigem Löschen erstellen"))
+        self.backup_check.set_active(True)
+        self.backup_check.set_sensitive(False)
+        self.backup_check.set_tooltip_text(
+            _("Sichert Einstellungen und Spielstände; Cache und Programmdateien werden ausgelassen.")
+        )
+        options.append(self.backup_check)
+        self.process_check = Gtk.CheckButton(label=_("Zugehörige laufende Prozesse automatisch beenden"))
         self.process_check.set_active(True)
         options.append(self.process_check)
         outer.append(options)
 
         bottom = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        self.delete_note = Gtk.Label(label="Vor dem Löschen erscheint eine letzte Zusammenfassung.", xalign=0)
+        self.delete_note = Gtk.Label(label=_("Vor dem Löschen erscheint eine letzte Zusammenfassung."), xalign=0)
         self.delete_note.set_hexpand(True)
         self.delete_note.add_css_class("muted")
         bottom.append(self.delete_note)
-        self.remove_button = Gtk.Button(label="Restlos entfernen")
+        self.remove_button = Gtk.Button(label=_("Restlos entfernen"))
         self.remove_button.add_css_class("destructive-action")
         self.remove_button.connect("clicked", self._confirm_removal)
         bottom.append(self.remove_button)
@@ -352,7 +372,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.progress_spinner = Gtk.Spinner()
         self.progress_spinner.set_size_request(48, 48)
         box.append(self.progress_spinner)
-        self.progress_title = Gtk.Label(label="Entfernung wird vorbereitet …")
+        self.progress_title = Gtk.Label(label=_("Entfernung wird vorbereitet …"))
         self.progress_title.add_css_class("empty-title")
         self.progress_title.set_wrap(True)
         self.progress_title.set_max_width_chars(58)
@@ -360,7 +380,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.progress_bar = Gtk.ProgressBar()
         self.progress_bar.set_size_request(480, -1)
         box.append(self.progress_bar)
-        note = Gtk.Label(label="Dieses Fenster nicht schließen, solange Paketaktionen laufen.")
+        note = Gtk.Label(label=_("Dieses Fenster nicht schließen, solange Paketaktionen laufen."))
         note.add_css_class("muted")
         box.append(note)
         return box
@@ -371,7 +391,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.busy = True
         self.refresh_button.set_sensitive(False)
         self.scan_spinner.start()
-        self.scan_status_label.set_text("Pakete, Spielebibliotheken, Wine und portable Ordner werden eingelesen …")
+        self.scan_status_label.set_text(_("Pakete, Spielebibliotheken, Wine und portable Ordner werden eingelesen …"))
 
         def worker() -> None:
             try:
@@ -387,13 +407,13 @@ class MainWindow(Gtk.ApplicationWindow):
         self.refresh_button.set_sensitive(True)
         self.scan_spinner.stop()
         if error:
-            self.scan_status_label.set_text(f"Einlesen fehlgeschlagen: {error}")
+            self.scan_status_label.set_text(_("Einlesen fehlgeschlagen: {error}", error=error))
             return False
         self.apps = apps
         _clear_box(self.app_list)
         for app in apps:
             self.app_list.append(ApplicationRow(app))
-        self.scan_status_label.set_text(f"{len(apps)} Anwendungen erkannt")
+        self.scan_status_label.set_text(_("{count} Anwendungen erkannt", count=len(apps)))
         self.app_list.invalidate_filter()
         return False
 
@@ -402,9 +422,12 @@ class MainWindow(Gtk.ApplicationWindow):
             return True
         query = self.search.get_text().strip().casefold()
         app = row.record
-        selected = self.source_filter.get_selected_item()
-        source_name = selected.get_string() if isinstance(selected, Gtk.StringObject) else "Alle Quellen"
-        source_matches = source_name == "Alle Quellen" or app.source.value == source_name
+        selected_index = self.source_filter.get_selected()
+        source_matches = (
+            selected_index == 0
+            or selected_index > len(SourceKind)
+            or app.source == list(SourceKind)[selected_index - 1]
+        )
         query_matches = not query or query in f"{app.name} {app.package_id} {app.source.value}".casefold()
         return source_matches and query_matches
 
@@ -413,15 +436,15 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def _choose_folder(self, _button: Gtk.Button) -> None:
         if hasattr(Gtk, "FileDialog"):
-            dialog = Gtk.FileDialog(title="Programm- oder Spieleordner auswählen")
+            dialog = Gtk.FileDialog(title=_("Programm- oder Spieleordner auswählen"))
             dialog.select_folder(self, None, self._folder_selected)
             return
         dialog = Gtk.FileChooserNative(
-            title="Programm- oder Spieleordner auswählen",
+            title=_("Programm- oder Spieleordner auswählen"),
             transient_for=self,
             action=Gtk.FileChooserAction.SELECT_FOLDER,
-            accept_label="Auswählen",
-            cancel_label="Abbrechen",
+            accept_label=_("Auswählen"),
+            cancel_label=_("Abbrechen"),
         )
         self._legacy_folder_dialog = dialog
         dialog.connect("response", self._legacy_folder_selected)
@@ -434,7 +457,7 @@ class MainWindow(Gtk.ApplicationWindow):
             return
         path_value = folder.get_path()
         if not path_value:
-            self.scan_status_label.set_text("Dieser Ordner ist nicht als lokaler Pfad verfügbar.")
+            self.scan_status_label.set_text(_("Dieser Ordner ist nicht als lokaler Pfad verfügbar."))
             return
         self._add_manual_folder(Path(path_value).absolute())
 
@@ -458,9 +481,9 @@ class MainWindow(Gtk.ApplicationWindow):
             name=path.name or str(path),
             source=SourceKind.PORTABLE,
             package_id=path.name or "manueller-ordner",
-            description="Manuell ausgewählter Ordner; Inhalt und Größe werden vor dem Entfernen angezeigt",
+            description=_("Manuell ausgewählter Ordner; Inhalt und Größe werden vor dem Entfernen angezeigt"),
             icon="folder-symbolic",
-            scope="Manuelle Auswahl",
+            scope=_("Manuelle Auswahl"),
             metadata={
                 "manager": "portable",
                 "owned_paths": owned,
@@ -474,7 +497,9 @@ class MainWindow(Gtk.ApplicationWindow):
         else:
             self.apps.append(app)
             self.app_list.append(ApplicationRow(app))
-            self.scan_status_label.set_text(f"{len(self.apps)} Anwendungen erkannt · manueller Ordner hinzugefügt")
+            self.scan_status_label.set_text(
+                _("{count} Anwendungen erkannt · manueller Ordner hinzugefügt", count=len(self.apps))
+            )
         self.search.set_text("")
         self.source_filter.set_selected(0)
         self.app_list.invalidate_filter()
@@ -496,8 +521,8 @@ class MainWindow(Gtk.ApplicationWindow):
         _clear_box(self.detail_icon_box)
         self.detail_icon_box.append(_icon_widget(app.icon, 64))
         self.detail_name.set_text(app.name)
-        self.detail_description.set_text(app.description or "Keine Beschreibung verfügbar")
-        self.detail_source.set_text(f"{app.source.value} · {app.scope}")
+        self.detail_description.set_text(display_text(app.description) or _("Keine Beschreibung verfügbar"))
+        self.detail_source.set_text(f"{display_text(app.source.value)} · {display_text(app.scope)}")
         self.detail_id.set_text(app.package_id)
         self.detail_stack.set_visible_child_name("detail")
 
@@ -507,7 +532,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.busy = True
         self.analyze_button.set_sensitive(False)
         self.remove_button.set_sensitive(False)
-        self.plan_summary.set_text("Analyse läuft …")
+        self.plan_summary.set_text(_("Analyse läuft …"))
         app = self.current_app
 
         def worker() -> None:
@@ -523,7 +548,9 @@ class MainWindow(Gtk.ApplicationWindow):
         self.busy = False
         self.analyze_button.set_sensitive(True)
         if error or plan is None:
-            self.plan_summary.set_text(f"Analyse fehlgeschlagen: {error or 'unbekannter Fehler'}")
+            self.plan_summary.set_text(
+                _("Analyse fehlgeschlagen: {error}", error=error or _("unbekannter Fehler"))
+            )
             return False
         if self.current_app is None or plan.app.key != self.current_app.key:
             return False
@@ -533,14 +560,14 @@ class MainWindow(Gtk.ApplicationWindow):
         _clear_box(self.warning_box)
 
         if plan.actions:
-            action_title = Gtk.Label(label="Paketverwaltung", xalign=0)
+            action_title = Gtk.Label(label=_("Paketverwaltung"), xalign=0)
             action_title.add_css_class("section-title")
             self.action_card.append(action_title)
             for action in plan.actions:
                 line = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
                 icon = Gtk.Image.new_from_icon_name("system-software-install-symbolic")
                 line.append(icon)
-                label = Gtk.Label(label=action.label, xalign=0)
+                label = Gtk.Label(label=display_text(action.label), xalign=0)
                 label.set_wrap(True)
                 line.append(label)
                 self.action_card.append(line)
@@ -551,14 +578,14 @@ class MainWindow(Gtk.ApplicationWindow):
         for target in plan.targets:
             self.target_list.append(TargetRow(target, self._update_plan_summary))
         if not plan.targets:
-            label = Gtk.Label(label="Keine zusätzlichen Benutzerdaten gefunden")
+            label = Gtk.Label(label=_("Keine zusätzlichen Benutzerdaten gefunden"))
             label.set_margin_top(18)
             label.set_margin_bottom(18)
             label.add_css_class("muted")
             self.target_list.append(label)
 
         for warning in plan.warnings:
-            line = Gtk.Label(label=f"⚠ {warning}", xalign=0)
+            line = Gtk.Label(label=f"⚠ {display_text(warning)}", xalign=0)
             line.set_wrap(True)
             self.warning_box.append(line)
         self.warning_box.set_visible(bool(plan.warnings))
@@ -571,42 +598,67 @@ class MainWindow(Gtk.ApplicationWindow):
         count = len(self.current_plan.selected_targets)
         action_count = len(self.current_plan.actions)
         self.plan_summary.set_text(
-            f"{action_count} Paketaktion(en) · {count} Pfad(e) · {format_size(self.current_plan.total_size)}"
+            _(
+                "{actions} Paketaktion(en) · {paths} Pfad(e) · {size}",
+                actions=action_count,
+                paths=count,
+                size=format_size(self.current_plan.total_size),
+            )
         )
         self.remove_button.set_sensitive(bool(action_count or count) and not self.busy)
+
+    def _permanent_mode_changed(self, check: Gtk.CheckButton) -> None:
+        self.backup_check.set_sensitive(check.get_active())
 
     def _confirm_removal(self, _button: Gtk.Button) -> None:
         plan = self.current_plan
         if plan is None or self.busy:
             return
         permanent = self.permanent_check.get_active()
+        create_backup = permanent and self.backup_check.get_active()
+        backup_targets = BackupManager().candidates(plan.selected_targets) if create_backup else []
         processes = RemovalExecutor().related_processes(plan)
         process_note = ""
         if processes:
             names = ", ".join(f"{name} (PID {pid})" for pid, name in processes[:5])
-            process_note = f"\n\nLaufende Prozesse: {names}"
-        mode = "dauerhaft gelöscht" if permanent else "wiederherstellbar in den Papierkorb verschoben"
+            process_note = _("\n\nLaufende Prozesse: {names}", names=names)
+        mode = _("dauerhaft gelöscht") if permanent else _("wiederherstellbar in den Papierkorb verschoben")
         recovery_note = ""
         if not permanent and plan.actions:
             recovery_note = (
-                "\n\nHinweis: Paket-Deinstallationen und Änderungen an Launcher-Bibliotheken sind nicht "
-                "automatisch wiederherstellbar; nur die ausgewählten Dateipfade werden in den Papierkorb verschoben."
+                "\n\n" + _(
+                    "Hinweis: Paket-Deinstallationen und Änderungen an Launcher-Bibliotheken sind nicht automatisch "
+                    "wiederherstellbar; nur die ausgewählten Dateipfade werden in den Papierkorb verschoben."
+                )
+            )
+        backup_note = ""
+        if create_backup:
+            backup_note = _(
+                "\n\nSafety Backup: {count} geeignete Datenpfade mit {size} werden vor der Entfernung gesichert.",
+                count=len(backup_targets),
+                size=format_size(sum(target.size for target in backup_targets)),
             )
         secondary = (
-            f"{len(plan.actions)} Paketaktion(en) und {len(plan.selected_targets)} ausgewählte Pfade "
-            f"mit {format_size(plan.total_size)} werden verarbeitet. Benutzerdaten werden {mode}."
-            f"{recovery_note}{process_note}"
+            _(
+                "{actions} Paketaktion(en) und {paths} ausgewählte Pfade mit {size} werden verarbeitet. "
+                "Benutzerdaten werden {mode}.",
+                actions=len(plan.actions),
+                paths=len(plan.selected_targets),
+                size=format_size(plan.total_size),
+                mode=mode,
+            )
+            + backup_note + recovery_note + process_note
         )
         dialog = Gtk.MessageDialog(
             transient_for=self,
             modal=True,
             message_type=Gtk.MessageType.WARNING,
             buttons=Gtk.ButtonsType.NONE,
-            text=f"„{plan.app.name}“ wirklich restlos entfernen?",
+            text=_("„{name}“ wirklich restlos entfernen?", name=plan.app.name),
             secondary_text=secondary,
         )
-        dialog.add_button("Abbrechen", Gtk.ResponseType.CANCEL)
-        confirm = dialog.add_button("Endgültig entfernen" if permanent else "Entfernen", Gtk.ResponseType.ACCEPT)
+        dialog.add_button(_("Abbrechen"), Gtk.ResponseType.CANCEL)
+        confirm = dialog.add_button(_("Endgültig entfernen") if permanent else _("Entfernen"), Gtk.ResponseType.ACCEPT)
         confirm.add_css_class("destructive-action")
         dialog.set_default_response(Gtk.ResponseType.CANCEL)
         dialog.connect("response", self._on_confirm_response)
@@ -622,10 +674,11 @@ class MainWindow(Gtk.ApplicationWindow):
         self.busy = True
         permanent = self.permanent_check.get_active()
         stop_processes = self.process_check.get_active()
+        create_backup = permanent and self.backup_check.get_active()
         self.detail_stack.set_visible_child_name("progress")
         self.progress_spinner.start()
         self.progress_bar.set_fraction(0.0)
-        self.progress_title.set_text(f"„{plan.app.name}“ wird entfernt …")
+        self.progress_title.set_text(_("„{name}“ wird entfernt …", name=plan.app.name))
 
         def update(message: str, fraction: float) -> None:
             GLib.idle_add(self._set_progress, message, fraction)
@@ -636,6 +689,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 plan,
                 permanent=permanent,
                 stop_processes=stop_processes,
+                create_backup=create_backup,
                 progress=update,
             )
             GLib.idle_add(self._removal_finished, plan, result)
@@ -643,7 +697,7 @@ class MainWindow(Gtk.ApplicationWindow):
         threading.Thread(target=worker, daemon=True).start()
 
     def _set_progress(self, message: str, fraction: float) -> bool:
-        self.progress_title.set_text(message)
+        self.progress_title.set_text(display_text(message))
         self.progress_bar.set_fraction(max(0.0, min(fraction, 1.0)))
         return False
 
@@ -653,41 +707,79 @@ class MainWindow(Gtk.ApplicationWindow):
         self.progress_bar.set_fraction(1.0)
         if result.success:
             title = (
-                f"„{plan.app.name}“ wurde entfernt"
+                _("„{name}“ wurde entfernt", name=plan.app.name)
                 if not result.residual_paths
-                else f"„{plan.app.name}“ wurde entfernt – Restdaten gefunden"
+                else _("„{name}“ wurde entfernt – Restdaten gefunden", name=plan.app.name)
             )
-            detail_parts = [f"{len(result.removed_paths)} Pfade wurden verarbeitet."]
+            detail_parts = [_('{count} Pfade wurden verarbeitet.', count=len(result.removed_paths))]
             if result.recovery_items:
                 detail_parts.append(
-                    f"{len(result.recovery_items)} Pfade können im Wiederherstellungszentrum zurückgeholt werden."
+                    _(
+                        "{count} Pfade können im Wiederherstellungszentrum zurückgeholt werden.",
+                        count=len(result.recovery_items),
+                    )
+                )
+            if result.backup_items:
+                detail_parts.append(
+                    _(
+                        "Safety Backup: {count} Datenpfade wurden vor dem Löschen gesichert.",
+                        count=len(result.backup_items),
+                    )
                 )
             if result.residual_paths:
                 preview = "\n".join(result.residual_paths[:6])
                 suffix = "\n…" if len(result.residual_paths) > 6 else ""
                 detail_parts.append(
-                    f"Der Kontrollscan fand {len(result.residual_paths)} weitere mögliche Restpfade:\n"
-                    f"{preview}{suffix}"
+                    _(
+                        "Der Kontrollscan fand {count} weitere mögliche Restpfade:\n{preview}{suffix}",
+                        count=len(result.residual_paths),
+                        preview=preview,
+                        suffix=suffix,
+                    )
                 )
             elif result.verification_error:
-                detail_parts.append(f"Der Kontrollscan konnte nicht abgeschlossen werden: {result.verification_error}")
+                detail_parts.append(
+                    _(
+                        "Der Kontrollscan konnte nicht abgeschlossen werden: {error}",
+                        error=result.verification_error,
+                    )
+                )
             else:
-                detail_parts.append("Kontrollscan: keine weiteren zuordenbaren Restpfade gefunden.")
+                detail_parts.append(_("Kontrollscan: keine weiteren zuordenbaren Restpfade gefunden."))
             if result.kept_paths:
                 detail_parts.append(
-                    f"{len(result.kept_paths)} nicht ausgewählte Pfade wurden wie gewünscht beibehalten."
+                    _(
+                        "{count} nicht ausgewählte Pfade wurden wie gewünscht beibehalten.",
+                        count=len(result.kept_paths),
+                    )
                 )
             detail_parts.append(
-                f"Protokoll: {result.receipt_path or 'konnte nicht geschrieben werden'}"
+                _(
+                    "Protokoll: {path}",
+                    path=result.receipt_path or _("konnte nicht geschrieben werden"),
+                )
             )
             details = "\n\n".join(detail_parts)
             message_type = Gtk.MessageType.WARNING if result.residual_paths else Gtk.MessageType.INFO
         else:
-            title = "Entfernung nicht vollständig"
-            detail_parts = ["\n".join(result.errors[:8]) or "Ein unbekannter Fehler ist aufgetreten."]
+            title = _("Entfernung nicht vollständig")
+            detail_parts = [
+                "\n".join(display_text(error) for error in result.errors[:8])
+                or _("Ein unbekannter Fehler ist aufgetreten.")
+            ]
             if result.recovery_items:
                 detail_parts.append(
-                    f"{len(result.recovery_items)} bereits verschobene Pfade sind im Wiederherstellungszentrum verfügbar."
+                    _(
+                        "{count} bereits verschobene Pfade sind im Wiederherstellungszentrum verfügbar.",
+                        count=len(result.recovery_items),
+                    )
+                )
+            if result.backup_items:
+                detail_parts.append(
+                    _(
+                        "Das Safety Backup mit {count} Datenpfaden ist im Wiederherstellungszentrum verfügbar.",
+                        count=len(result.backup_items),
+                    )
                 )
             details = "\n\n".join(detail_parts)
             message_type = Gtk.MessageType.ERROR
@@ -699,9 +791,9 @@ class MainWindow(Gtk.ApplicationWindow):
             text=title,
             secondary_text=details,
         )
-        dialog.add_button("Schließen", Gtk.ResponseType.CLOSE)
-        if result.recovery_items:
-            dialog.add_button("Wiederherstellungszentrum", Gtk.ResponseType.HELP)
+        dialog.add_button(_("Schließen"), Gtk.ResponseType.CLOSE)
+        if result.recovery_items or result.backup_items:
+            dialog.add_button(_("Wiederherstellungszentrum"), Gtk.ResponseType.HELP)
         dialog.connect("response", self._after_result_dialog, result)
         dialog.present()
         return False
@@ -726,10 +818,10 @@ class MainWindow(Gtk.ApplicationWindow):
         dialog = Gtk.Dialog(
             transient_for=self,
             modal=True,
-            title="Restlos-Wiederherstellungszentrum",
+            title=_("Restlos-Wiederherstellungszentrum"),
         )
         dialog.set_default_size(760, 520)
-        dialog.add_button("Schließen", Gtk.ResponseType.CLOSE)
+        dialog.add_button(_("Schließen"), Gtk.ResponseType.CLOSE)
         dialog.connect("response", self._close_recovery_center)
         content = dialog.get_content_area()
         content.set_spacing(14)
@@ -738,13 +830,13 @@ class MainWindow(Gtk.ApplicationWindow):
         content.set_margin_start(20)
         content.set_margin_end(20)
 
-        title = Gtk.Label(label="Wiederherstellbare Benutzerdaten", xalign=0)
+        title = Gtk.Label(label=_("Wiederherstellbare Benutzerdaten und Safety Backups"), xalign=0)
         title.add_css_class("hero-title")
         content.append(title)
         note = Gtk.Label(
-            label=(
-                "Hier kannst du durch Restlos in den Papierkorb verschobene Dateien an ihren ursprünglichen Ort "
-                "zurückholen. Paket-Deinstallationen und Änderungen an Spielebibliotheken werden dabei nicht rückgängig gemacht."
+            label=_(
+                "Hier kannst du Papierkorbdaten und Safety Backups an ihren ursprünglichen Ort zurückholen. "
+                "Paket-Deinstallationen und Änderungen an Spielebibliotheken werden dabei nicht rückgängig gemacht."
             ),
             xalign=0,
         )
@@ -765,7 +857,7 @@ class MainWindow(Gtk.ApplicationWindow):
         spinner = Gtk.Spinner()
         spinner.start()
         loading.append(spinner)
-        loading.append(Gtk.Label(label="Papierkorb und Restlos-Protokolle werden geprüft …"))
+        loading.append(Gtk.Label(label=_("Papierkorb, Safety Backups und Restlos-Protokolle werden geprüft …")))
         record_list.append(loading)
         scroll.set_child(record_list)
         content.append(scroll)
@@ -792,9 +884,9 @@ class MainWindow(Gtk.ApplicationWindow):
             return False
         _clear_box(record_list)
         if error:
-            empty_text = f"Wiederherstellungsdaten konnten nicht gelesen werden: {error}"
+            empty_text = _("Wiederherstellungsdaten konnten nicht gelesen werden: {error}", error=error)
         elif not records:
-            empty_text = "Keine wiederherstellbaren Restlos-Vorgänge gefunden."
+            empty_text = _("Keine wiederherstellbaren Restlos-Vorgänge gefunden.")
         else:
             empty_text = ""
             for record in records:
@@ -831,8 +923,13 @@ class MainWindow(Gtk.ApplicationWindow):
         timestamp = record.timestamp.replace("T", " ").replace("Z", " UTC")
         details = Gtk.Label(
             label=(
-                f"{timestamp} · {len(record.available_items)} Pfad(e) · "
-                f"{format_size(record.available_size)} · {record.source}"
+                _(
+                    "{timestamp} · {count} Pfad(e) · {size} · {source}",
+                    timestamp=timestamp,
+                    count=len(record.available_items),
+                    size=format_size(record.available_size),
+                    source=display_text(record.source),
+                )
             ),
             xalign=0,
         )
@@ -840,14 +937,14 @@ class MainWindow(Gtk.ApplicationWindow):
         labels.append(details)
         if record.actions:
             action_note = Gtk.Label(
-                label="Paket- oder Bibliotheksaktionen müssen bei Bedarf separat rückgängig gemacht werden.",
+                label=_("Paket- oder Bibliotheksaktionen müssen bei Bedarf separat rückgängig gemacht werden."),
                 xalign=0,
             )
             action_note.set_wrap(True)
             action_note.add_css_class("muted")
             labels.append(action_note)
         box.append(labels)
-        restore = Gtk.Button(label="Wiederherstellen")
+        restore = Gtk.Button(label=_("Wiederherstellen"))
         restore.set_valign(Gtk.Align.CENTER)
         restore.add_css_class("suggested-action")
         restore.connect("clicked", self._confirm_restore, record, parent)
@@ -871,15 +968,16 @@ class MainWindow(Gtk.ApplicationWindow):
             modal=True,
             message_type=Gtk.MessageType.QUESTION,
             buttons=Gtk.ButtonsType.NONE,
-            text=f"Daten von „{record.app_name}“ wiederherstellen?",
-            secondary_text=(
-                f"{len(record.available_items)} Pfad(e) mit {format_size(record.available_size)} werden an ihre "
-                "ursprünglichen Orte zurückgeholt. Vorhandene Dateien werden nicht überschrieben. "
-                "Ein deinstalliertes Programmpaket wird dadurch nicht erneut installiert."
+            text=_("Daten von „{name}“ wiederherstellen?", name=record.app_name),
+            secondary_text=_(
+                "{count} Pfad(e) mit {size} werden an ihre ursprünglichen Orte zurückgeholt. Vorhandene Dateien "
+                "werden nicht überschrieben. Ein deinstalliertes Programmpaket wird dadurch nicht erneut installiert.",
+                count=len(record.available_items),
+                size=format_size(record.available_size),
             ),
         )
-        dialog.add_button("Abbrechen", Gtk.ResponseType.CANCEL)
-        confirm = dialog.add_button("Wiederherstellen", Gtk.ResponseType.ACCEPT)
+        dialog.add_button(_("Abbrechen"), Gtk.ResponseType.CANCEL)
+        confirm = dialog.add_button(_("Wiederherstellen"), Gtk.ResponseType.ACCEPT)
         confirm.add_css_class("suggested-action")
         dialog.set_default_response(Gtk.ResponseType.ACCEPT)
         dialog.connect("response", self._on_restore_confirmed, record.recovery_id, center)
@@ -899,7 +997,7 @@ class MainWindow(Gtk.ApplicationWindow):
         progress = Gtk.Dialog(
             transient_for=self,
             modal=True,
-            title="Daten wiederherstellen",
+            title=_("Daten wiederherstellen"),
         )
         progress.set_deletable(False)
         area = progress.get_content_area()
@@ -913,7 +1011,7 @@ class MainWindow(Gtk.ApplicationWindow):
         spinner.set_halign(Gtk.Align.CENTER)
         spinner.start()
         area.append(spinner)
-        status = Gtk.Label(label="Papierkorbdaten werden an ihre ursprünglichen Orte zurückgeholt …")
+        status = Gtk.Label(label=_("Daten werden an ihre ursprünglichen Orte zurückgeholt …"))
         status.set_wrap(True)
         area.append(status)
         progress.present()
@@ -927,20 +1025,29 @@ class MainWindow(Gtk.ApplicationWindow):
     def _restore_finished(self, progress: Gtk.Dialog, result: RestoreResult) -> bool:
         progress.destroy()
         if result.success:
-            title = "Wiederherstellung abgeschlossen"
+            title = _("Wiederherstellung abgeschlossen")
             details = (
-                f"{len(result.restored_paths)} Pfad(e) wurden zurückgeholt. "
-                "Falls das Programmpaket entfernt wurde, muss es separat neu installiert werden."
+                _(
+                    "{count} Pfad(e) wurden zurückgeholt. Falls das Programmpaket entfernt wurde, muss es separat "
+                    "neu installiert werden.",
+                    count=len(result.restored_paths),
+                )
             )
             message_type = Gtk.MessageType.INFO
         else:
-            title = "Wiederherstellung nicht vollständig"
+            title = _("Wiederherstellung nicht vollständig")
             restored = (
-                f"{len(result.restored_paths)} Pfad(e) wurden bereits wiederhergestellt.\n\n"
+                _(
+                    "{count} Pfad(e) wurden bereits wiederhergestellt.\n\n",
+                    count=len(result.restored_paths),
+                )
                 if result.restored_paths
                 else ""
             )
-            details = restored + ("\n".join(result.errors[:8]) or "Ein unbekannter Fehler ist aufgetreten.")
+            details = restored + (
+                "\n".join(display_text(error) for error in result.errors[:8])
+                or _("Ein unbekannter Fehler ist aufgetreten.")
+            )
             message_type = Gtk.MessageType.ERROR
         dialog = Gtk.MessageDialog(
             transient_for=self,
@@ -993,6 +1100,13 @@ class RestlosApplication(Gtk.Application):
         )
         automatic.connect("change-state", self._change_automatic_updates)
         self.add_action(automatic)
+        language = Gio.SimpleAction.new_stateful(
+            "language",
+            GLib.VariantType.new("s"),
+            GLib.Variant.new_string(LanguageSettings().selected()),
+        )
+        language.connect("change-state", self._change_language)
+        self.add_action(language)
 
     def _show_about(self, _action, _parameter) -> None:
         dialog = Gtk.AboutDialog(
@@ -1001,11 +1115,11 @@ class RestlosApplication(Gtk.Application):
             program_name=APP_NAME,
             version=__version__,
             comments=APP_TAGLINE,
-            copyright="2026 – lokale Open-Source-Ausgabe",
+            copyright=_("2026 – lokale Open-Source-Ausgabe"),
             license_type=Gtk.License.MIT_X11,
         )
         dialog.set_website(PROJECT_URL)
-        dialog.set_website_label("Projektseite auf GitHub")
+        dialog.set_website_label(_("Projektseite auf GitHub"))
         dialog.present()
 
     def _show_recovery_center(self, _action, _parameter) -> None:
@@ -1027,6 +1141,20 @@ class RestlosApplication(Gtk.Application):
         action.set_state(value)
         if enabled:
             self._start_update_check(automatic=False)
+
+    def _change_language(self, action: Gio.SimpleAction, value: GLib.Variant) -> None:
+        selected = value.get_string()
+        try:
+            LanguageSettings().set(selected)
+        except (OSError, ValueError) as error:
+            self._show_message(_("Sprache konnte nicht gespeichert werden"), str(error), Gtk.MessageType.ERROR)
+            return
+        action.set_state(value)
+        self._show_message(
+            _("Sprache gespeichert"),
+            _("Starte Restlos Uninstaller neu, damit die neue Sprache vollständig verwendet wird."),
+            Gtk.MessageType.INFO,
+        )
 
     def _start_update_check(self, *, automatic: bool) -> None:
         if self._update_check_running or self._update_install_running:
@@ -1065,16 +1193,16 @@ class RestlosApplication(Gtk.Application):
         if error:
             if not automatic:
                 self._show_message(
-                    "Update-Suche fehlgeschlagen",
-                    error,
+                    _("Update-Suche fehlgeschlagen"),
+                    display_text(error),
                     Gtk.MessageType.ERROR,
                 )
             return False
         if release is None:
             if not automatic:
                 self._show_message(
-                    "Restlos Uninstaller ist aktuell",
-                    f"Version {__version__} ist die neueste verfügbare Ausgabe.",
+                    _("Restlos Uninstaller ist aktuell"),
+                    _("Version {version} ist die neueste verfügbare Ausgabe.", version=__version__),
                     Gtk.MessageType.INFO,
                 )
             return False
@@ -1086,22 +1214,22 @@ class RestlosApplication(Gtk.Application):
         if len(notes) > 1400:
             notes = notes[:1397].rstrip() + " …"
         details = (
-            f"Installiert: {__version__}\n"
-            f"Verfügbar: {release.version}\n\n"
-            f"{notes or 'Änderungen stehen auf der Release-Seite.'}\n\n"
-            "Das Update wird nur nach deiner Bestätigung geladen, per SHA-256 geprüft und atomar installiert."
+            _("Installiert: {version}", version=__version__) + "\n"
+            + _("Verfügbar: {version}", version=release.version) + "\n\n"
+            + (notes or _("Änderungen stehen auf der Release-Seite.")) + "\n\n"
+            + _("Das Update wird nur nach deiner Bestätigung geladen, per SHA-256 geprüft und atomar installiert.")
         )
         dialog = Gtk.MessageDialog(
             transient_for=self.props.active_window,
             modal=True,
             message_type=Gtk.MessageType.INFO,
             buttons=Gtk.ButtonsType.NONE,
-            text=f"Restlos Uninstaller {release.version} ist verfügbar",
+            text=_("Restlos Uninstaller {version} ist verfügbar", version=release.version),
             secondary_text=details,
         )
-        dialog.add_button("Später", Gtk.ResponseType.CANCEL)
-        dialog.add_button("Release-Seite", Gtk.ResponseType.HELP)
-        install = dialog.add_button("Herunterladen und installieren", Gtk.ResponseType.ACCEPT)
+        dialog.add_button(_("Später"), Gtk.ResponseType.CANCEL)
+        dialog.add_button(_("Release-Seite"), Gtk.ResponseType.HELP)
+        install = dialog.add_button(_("Herunterladen und installieren"), Gtk.ResponseType.ACCEPT)
         install.add_css_class("suggested-action")
         dialog.set_default_response(Gtk.ResponseType.ACCEPT)
         dialog.connect("response", self._on_update_response, release)
@@ -1125,7 +1253,7 @@ class RestlosApplication(Gtk.Application):
         dialog = Gtk.Dialog(
             transient_for=self.props.active_window,
             modal=True,
-            title=f"Restlos Uninstaller {release.version} installieren",
+            title=_("Restlos Uninstaller {version} installieren", version=release.version),
         )
         dialog.set_deletable(False)
         content = dialog.get_content_area()
@@ -1139,14 +1267,14 @@ class RestlosApplication(Gtk.Application):
         spinner.set_halign(Gtk.Align.CENTER)
         spinner.start()
         content.append(spinner)
-        label = Gtk.Label(label="Update wird vorbereitet …")
+        label = Gtk.Label(label=_("Update wird vorbereitet …"))
         label.set_wrap(True)
         label.set_max_width_chars(58)
         content.append(label)
         progress_bar = Gtk.ProgressBar()
         progress_bar.set_size_request(460, -1)
         content.append(progress_bar)
-        note = Gtk.Label(label="Der aktuelle Restlos Uninstaller bleibt bei einem Fehler weiterhin startfähig.")
+        note = Gtk.Label(label=_("Der aktuelle Restlos Uninstaller bleibt bei einem Fehler weiterhin startfähig."))
         note.add_css_class("muted")
         content.append(note)
         self._update_progress_dialog = dialog
@@ -1171,7 +1299,7 @@ class RestlosApplication(Gtk.Application):
 
     def _set_update_progress(self, message: str, fraction: float) -> bool:
         if self._update_progress_label is not None:
-            self._update_progress_label.set_text(message)
+            self._update_progress_label.set_text(display_text(message))
         if self._update_progress_bar is not None:
             self._update_progress_bar.set_fraction(max(0.0, min(fraction, 1.0)))
         return False
@@ -1189,8 +1317,8 @@ class RestlosApplication(Gtk.Application):
         self.release()
         if error or version is None:
             self._show_message(
-                "Update nicht installiert",
-                error or "Ein unbekannter Fehler ist aufgetreten.",
+                _("Update nicht installiert"),
+                display_text(error) if error else _("Ein unbekannter Fehler ist aufgetreten."),
                 Gtk.MessageType.ERROR,
             )
             return False
@@ -1200,14 +1328,14 @@ class RestlosApplication(Gtk.Application):
             modal=True,
             message_type=Gtk.MessageType.INFO,
             buttons=Gtk.ButtonsType.NONE,
-            text=f"Restlos Uninstaller {version} wurde installiert",
-            secondary_text=(
-                "Einstellungen und Entfernungshistorie wurden beibehalten. "
-                "Starte Restlos Uninstaller jetzt neu, damit die neue Version aktiv wird."
+            text=_("Restlos Uninstaller {version} wurde installiert", version=version),
+            secondary_text=_(
+                "Einstellungen und Entfernungshistorie wurden beibehalten. Starte Restlos Uninstaller jetzt neu, "
+                "damit die neue Version aktiv wird."
             ),
         )
-        dialog.add_button("Später neu starten", Gtk.ResponseType.CLOSE)
-        restart = dialog.add_button("Jetzt neu starten", Gtk.ResponseType.ACCEPT)
+        dialog.add_button(_("Später neu starten"), Gtk.ResponseType.CLOSE)
+        restart = dialog.add_button(_("Jetzt neu starten"), Gtk.ResponseType.ACCEPT)
         restart.add_css_class("suggested-action")
         dialog.set_default_response(Gtk.ResponseType.ACCEPT)
         dialog.connect("response", self._on_restart_response)
@@ -1223,8 +1351,8 @@ class RestlosApplication(Gtk.Application):
             os.execv(str(command), (str(command),))
         except OSError as error:
             self._show_message(
-                "Neustart fehlgeschlagen",
-                f"Starte Restlos Uninstaller manuell neu. Technisches Detail: {error}",
+                _("Neustart fehlgeschlagen"),
+                _("Starte Restlos Uninstaller manuell neu. Technisches Detail: {error}", error=error),
                 Gtk.MessageType.ERROR,
             )
 
@@ -1245,7 +1373,7 @@ def run_gui() -> int:
     Gtk.init()
     display = Gdk.Display.get_default()
     if display is None:
-        print("Keine grafische Sitzung gefunden. Verwende `restlos list` oder `restlos analyze NAME`.")
+        print(_("Keine grafische Sitzung gefunden. Verwende `restlos list` oder `restlos analyze NAME`."))
         return 1
     provider = Gtk.CssProvider()
     provider.load_from_data(CSS)

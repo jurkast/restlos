@@ -11,7 +11,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
-from .models import RecoveryItem, RecoveryRecord, RestoreResult
+from .backup import BackupError, BackupManager
+from .models import BackupItem, RecoveryItem, RecoveryRecord, RestoreResult
+from .utils import is_within
 
 
 CommandRunner = Callable[..., subprocess.CompletedProcess[str]]
@@ -105,6 +107,7 @@ class RecoveryManager:
         *,
         state_home: Path | None = None,
         trash: TrashBackend | None = None,
+        backup: BackupManager | None = None,
     ) -> None:
         self.home = (home or Path.home()).absolute()
         if state_home is not None:
@@ -116,6 +119,7 @@ class RecoveryManager:
             base = Path(configured).absolute() if configured else self.home / ".local/state"
         self.history_directory = base / "restlos/history"
         self.trash = trash or TrashBackend()
+        self.backup = backup or BackupManager(self.home, state_home=base)
 
     def list_records(self, *, include_finished: bool = False) -> list[RecoveryRecord]:
         try:
@@ -145,12 +149,13 @@ class RecoveryManager:
             result.errors.append(f"Protokoll konnte nicht gelesen werden: {error}")
             return result
         raw_items = payload.get("recovery_items")
-        if not isinstance(raw_items, list):
+        raw_backup = payload.get("safety_backup")
+        if not isinstance(raw_items, list) and not isinstance(raw_backup, dict):
             result.errors.append("Dieses Protokoll enthält keine wiederherstellbaren Daten.")
             return result
 
         changed = False
-        for raw_item in raw_items:
+        for raw_item in raw_items if isinstance(raw_items, list) else []:
             item = self._item_from_payload(raw_item)
             if item is None or item.restored_at:
                 continue
@@ -164,6 +169,26 @@ class RecoveryManager:
                 self._write_payload(receipt, payload)
             except OSError as error:
                 result.errors.append(f"{item.original_path}: {error}")
+
+        if isinstance(raw_backup, dict):
+            archive_value = raw_backup.get("archive_path")
+            backup_items = raw_backup.get("items")
+            if isinstance(archive_value, str) and isinstance(backup_items, list):
+                archive = Path(archive_value)
+                for raw_item in backup_items:
+                    item = self._backup_item_from_payload(raw_item)
+                    if item is None or item.restored_at:
+                        continue
+                    try:
+                        self.backup.restore_item(archive, item)
+                        restored_at = _utc_timestamp()
+                        raw_item["restored_at"] = restored_at
+                        item.restored_at = restored_at
+                        result.restored_paths.append(item.original_path)
+                        changed = True
+                        self._write_payload(receipt, payload)
+                    except (OSError, BackupError) as error:
+                        result.errors.append(f"{item.original_path}: {error}")
 
         if not changed and not result.errors:
             result.errors.append("Es sind keine noch verfügbaren Daten in diesem Vorgang enthalten.")
@@ -183,7 +208,8 @@ class RecoveryManager:
             payload = self._read_payload(receipt)
         except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
             return None
-        if payload.get("schema") != 2 or payload.get("mode") != "trash":
+        schema = payload.get("schema")
+        if schema not in {2, 3}:
             return None
         application = payload.get("application")
         raw_items = payload.get("recovery_items")
@@ -197,6 +223,22 @@ class RecoveryManager:
             if not item.restored_at and entries.get(item.trash_uri) != item.original_path:
                 continue
             items.append(item)
+        backup_items: list[BackupItem] = []
+        backup_path = ""
+        raw_backup = payload.get("safety_backup")
+        if schema == 3 and isinstance(raw_backup, dict):
+            archive_value = raw_backup.get("archive_path")
+            raw_backup_items = raw_backup.get("items")
+            if (
+                isinstance(archive_value, str)
+                and isinstance(raw_backup_items, list)
+                and self._valid_backup_archive(Path(archive_value))
+            ):
+                backup_path = archive_value
+                for raw_item in raw_backup_items:
+                    item = self._backup_item_from_payload(raw_item)
+                    if item is not None:
+                        backup_items.append(item)
         actions = payload.get("actions")
         residual_paths = payload.get("residual_paths")
         return RecoveryRecord(
@@ -208,6 +250,8 @@ class RecoveryManager:
             source=str(application.get("source", "")),
             success=payload.get("success") is True,
             items=items,
+            backup_items=backup_items,
+            backup_path=backup_path,
             actions=[value for value in actions if isinstance(value, str)] if isinstance(actions, list) else [],
             residual_paths=[value for value in residual_paths if isinstance(value, str)]
             if isinstance(residual_paths, list)
@@ -233,6 +277,37 @@ class RecoveryManager:
         ):
             return None
         return RecoveryItem(original, uri, size, restored_at)
+
+    def _backup_item_from_payload(self, raw_item: object) -> BackupItem | None:
+        if not isinstance(raw_item, dict):
+            return None
+        original = raw_item.get("original_path")
+        member = raw_item.get("archive_member")
+        size = raw_item.get("size", 0)
+        restored_at = raw_item.get("restored_at", "")
+        if (
+            not isinstance(original, str)
+            or not Path(original).is_absolute()
+            or not is_within(Path(original), self.home)
+            or Path(original) == self.home
+            or not isinstance(member, str)
+            or not member.startswith("items/")
+            or ".." in Path(member).parts
+            or not isinstance(size, int)
+            or size < 0
+            or not isinstance(restored_at, str)
+        ):
+            return None
+        return BackupItem(original, member, size, restored_at)
+
+    def _valid_backup_archive(self, path: Path) -> bool:
+        absolute = path.absolute()
+        return (
+            is_within(absolute, self.backup.backup_directory.absolute())
+            and absolute.suffixes[-2:] == [".tar", ".gz"]
+            and absolute.is_file()
+            and not absolute.is_symlink()
+        )
 
     @staticmethod
     def _read_payload(receipt: Path) -> dict[str, object]:

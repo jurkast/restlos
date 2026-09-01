@@ -8,4 +8,6 @@ Ein Update-Archiv wird erst nach ausdrücklicher Bestätigung heruntergeladen. R
 
 Beim Einlesen werden lokale Paketinformationen, Desktop-Dateien, Spielebibliotheken und eindeutig zuordenbare Benutzerpfade verarbeitet. Ergebnisprotokolle liegen lokal unter `~/.local/state/restlos/history` und werden nicht automatisch übertragen. Bei einer wiederherstellbaren Entfernung enthalten sie außerdem die ursprünglichen Pfade und die zugehörigen lokalen Papierkorb-URIs. Diese Angaben benötigt das Wiederherstellungszentrum und sie verlassen den Rechner nicht.
 
+Wenn vor einer endgültigen Löschung das optionale **Safety Backup** aktiviert ist, legt Restlos eine lokale Kopie geeigneter Einstellungen, Anwendungsdaten und Spielstände unter `~/.local/state/restlos/backups` an. Archive und Protokolle sind nur für das Benutzerkonto lesbar, werden nicht hochgeladen und sind nicht zusätzlich verschlüsselt. Wer das Benutzerkonto oder die unverschlüsselte Festplatte lesen kann, kann daher auch diese Sicherungen lesen. `./uninstall.sh --purge` entfernt Einstellungen, Protokolle und Safety Backups gemeinsam.
+
 Wenn Nutzer Protokolle in einem GitHub-Issue teilen, sollten Benutzernamen, Home-Pfade und andere persönliche Informationen vorher entfernt werden.

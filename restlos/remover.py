@@ -14,6 +14,7 @@ from typing import Callable
 
 from . import __version__
 from .analyzer import PathGuard, RemovalAnalyzer, UnsafeTargetError
+from .backup import BackupError, BackupManager
 from .models import RecoveryItem, RemovalAction, RemovalPlan, RemovalResult, SourceKind
 from .recovery import TrashBackend
 
@@ -22,7 +23,13 @@ ProgressCallback = Callable[[str, float], None]
 
 
 class RemovalExecutor:
-    def __init__(self, home: Path | None = None, *, trash: TrashBackend | None = None) -> None:
+    def __init__(
+        self,
+        home: Path | None = None,
+        *,
+        trash: TrashBackend | None = None,
+        backup: BackupManager | None = None,
+    ) -> None:
         self.home = (home or Path.home()).absolute()
         self.guard = PathGuard(self.home)
         if home is not None:
@@ -31,6 +38,7 @@ class RemovalExecutor:
             configured = os.environ.get("XDG_STATE_HOME")
             self.state_home = Path(configured).absolute() if configured else self.home / ".local/state"
         self.trash = trash or TrashBackend()
+        self.backup = backup or BackupManager(self.home, state_home=self.state_home)
 
     def related_processes(self, plan: RemovalPlan) -> list[tuple[int, str]]:
         roots = [target.path.absolute() for target in plan.selected_targets]
@@ -107,17 +115,31 @@ class RemovalExecutor:
         *,
         permanent: bool = True,
         stop_processes: bool = True,
+        create_backup: bool = False,
         progress: ProgressCallback | None = None,
     ) -> RemovalResult:
         result = RemovalResult(success=False)
         callback = progress or (lambda _message, _fraction: None)
+        if create_backup and not permanent:
+            result.errors.append("Safety Backup und Papierkorbmodus können nicht gleichzeitig verwendet werden.")
+            return self._finish(plan, result, permanent)
         processes = self.related_processes(plan)
         if processes and stop_processes:
-            callback("Laufende Prozesse werden beendet …", 0.03)
+            callback("Laufende Prozesse werden beendet …", 0.02)
             self.stop_processes(processes)
         elif processes:
             result.errors.append("Die Anwendung läuft noch und wurde nicht beendet.")
             return self._finish(plan, result, permanent)
+        if create_backup:
+            callback("Safety Backup wird erstellt …", 0.03)
+            try:
+                result.backup_path, result.backup_items = self.backup.create(
+                    plan.selected_targets,
+                    progress=lambda message, fraction: callback(message, 0.03 + fraction * 0.08),
+                )
+            except BackupError as error:
+                result.errors.append(f"Safety Backup fehlgeschlagen; es wurde nichts entfernt: {error}")
+                return self._finish(plan, result, permanent)
 
         total_steps = max(len(plan.actions) + len(plan.selected_targets), 1)
         completed_steps = 0
@@ -321,7 +343,7 @@ class RemovalExecutor:
             safe_id = "".join(character if character.isalnum() else "-" for character in plan.app.package_id)[:80]
             receipt = state_directory / f"{filename_timestamp}-{safe_id}.json"
             payload = {
-                "schema": 2,
+                "schema": 3,
                 "restlos_version": __version__,
                 "timestamp": timestamp,
                 "application": plan.app.to_dict(),
@@ -329,6 +351,10 @@ class RemovalExecutor:
                 "success": result.success,
                 "removed_paths": result.removed_paths,
                 "recovery_items": [item.to_dict() for item in result.recovery_items],
+                "safety_backup": {
+                    "archive_path": result.backup_path,
+                    "items": [item.to_dict() for item in result.backup_items],
+                },
                 "actions": [action.label for action in plan.actions],
                 "residual_paths": result.residual_paths,
                 "kept_paths": result.kept_paths,

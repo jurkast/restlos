@@ -10,7 +10,7 @@
 
 **Restlos Uninstaller** is a safe graphical app and game uninstaller for the major Linux distribution families. It combines software from multiple installation systems in one interface and creates a visible, selectable removal plan before making any changes.
 
-> **Public beta:** Restlos can permanently delete data. Carefully review the removal plan and back up important files and save games first. The application interface is currently German; contributions for full localisation are welcome.
+> **Public beta:** Restlos can permanently delete data. Carefully review the removal plan. Restlos can create a local Safety Backup of eligible settings and save data first.
 
 ## Detected sources
 
@@ -21,6 +21,8 @@
 - portable applications and unassigned Wine prefixes in `Games` and `Applications`
 - launcher-managed game libraries on additional drives
 - recoverable removal through the desktop trash and a graphical recovery centre
+- optional Safety Backups of eligible settings, application data and save games before permanent deletion
+- a complete German and English interface with an in-app language selector
 - a post-removal scan that reports additional residual paths separately from intentionally retained data
 - automatic daily release checks with an explicitly confirmed, verified in-app update
 
@@ -39,14 +41,14 @@ Flatpak, Snap, AppImage, Wine and game-platform detection are independent of the
 
 ## Install
 
-Download the latest package from [GitHub Releases](https://github.com/jurkast/restlos/releases). For version 1.4.3:
+Download the latest package from [GitHub Releases](https://github.com/jurkast/restlos/releases). For version 1.5.0:
 
 ```bash
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.4.3/Restlos-1.4.3.tar.gz
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.4.3/Restlos-1.4.3.sha256
-sha256sum --check Restlos-1.4.3.sha256
-tar -xzf Restlos-1.4.3.tar.gz
-cd Restlos-1.4.3
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.5.0/Restlos-1.5.0.tar.gz
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.5.0/Restlos-1.5.0.sha256
+sha256sum --check Restlos-1.5.0.sha256
+tar -xzf Restlos-1.5.0.tar.gz
+cd Restlos-1.5.0
 ./install.sh
 ```
 
@@ -68,20 +70,26 @@ sudo zypper install python3-gobject typelib-1_0-Gtk-4_0 polkit
 
 Restlos Uninstaller is then available from the application menu. The existing update-compatible terminal command remains `~/.local/bin/restlos`.
 
-## Recovery and post-removal verification
+## Safety Backup, recovery and post-removal verification
 
-Recoverable removal is the safe default in the graphical interface. Restlos moves selected user data through GIO to the desktop trash and records both the exact trash URI and original path. The application menu opens a recovery centre for restoring entries that are still present. Existing files or directories at an original location are never overwritten.
+Recoverable removal is the safe default in the graphical interface. Restlos moves selected user data through GIO to the desktop trash and records both the exact trash URI and original path. When permanent deletion is selected, the offered Safety Backup can copy eligible settings, application data and save games after related processes have stopped and before the first deletion or package action. Cache, installers, artwork, launchers, and application or game installation folders are excluded. If the requested backup fails, removal does not begin.
+
+The application menu opens a recovery centre for restoring available Trash data and Safety Backups. Existing files or directories at an original location are never overwritten. Private archives are stored below `~/.local/state/restlos/backups` and are never uploaded.
 
 After every removal, Restlos scans its known file sources again without repeating package-manager actions. Additional matches are reported as possible residual paths; paths deliberately deselected in the plan are reported separately as retained data.
 
-Recovery only covers files and directories moved to the trash. It does not reinstall native packages, Flatpaks or Snaps, and it does not recreate removed Lutris or Heroic library entries. Emptying the desktop trash outside Restlos also makes those entries unavailable to the recovery centre.
+Recovery only covers files and directories moved to Trash or stored in a Safety Backup. It does not reinstall native packages, Flatpaks or Snaps, and it does not recreate removed Lutris or Heroic library entries. Emptying the desktop trash outside Restlos also makes those Trash entries unavailable to the recovery centre.
 
 Terminal users can inspect and restore transactions with:
 
 ```bash
 restlos recovery list
 restlos recovery restore RECOVERY-ID --yes
+restlos remove "Application name" --yes --backup
+restlos --language de list
 ```
+
+Restlos uses the system language by default. Choose German or English from **Menu → Language** and restart the application, or override the language for one terminal invocation with `--language`.
 
 ## Updates
 
@@ -93,7 +101,7 @@ Automatic checks can be disabled from the application menu, and a manual check c
 
 Restlos never executes a launcher while inspecting an application. Package identifiers are validated and commands are executed as argument lists rather than shell text. APT, DNF, pacman and Zypper must first calculate the complete removal without changing the system. The package action is blocked if that preview fails or contains protected system packages. Broad or shared locations—including the home directory, shared Flatpak, Steam and Lutris storage, and the default Wine prefix—are blocked. Symbolic links are deleted without following their targets.
 
-Recovery verifies that the recorded trash URI still belongs to the recorded original path and refuses to overwrite anything recreated at that location. Receipts are written atomically with user-only permissions.
+Recovery verifies that the recorded Trash URI still belongs to the recorded original path and refuses to overwrite anything recreated at that location. Safety Backup creation does not follow symlinks or include special files; restoration validates the archive manifest and paths and stays inside the original user path. Archives and receipts use user-only permissions.
 
 No third-party uninstaller can reliably assign every neutrally named legacy file to an application. Restlos therefore prefers missing an uncertain match over deleting unrelated data and always shows the plan first.
 

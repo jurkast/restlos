@@ -74,7 +74,7 @@ class RecoveryTests(unittest.TestCase):
         self.assertEqual(len(result.recovery_items), 1)
         receipt = Path(result.receipt_path)
         payload = json.loads(receipt.read_text(encoding="utf-8"))
-        self.assertEqual(payload["schema"], 2)
+        self.assertEqual(payload["schema"], 3)
         self.assertEqual(payload["mode"], "trash")
         self.assertEqual(receipt.stat().st_mode & 0o777, 0o600)
 

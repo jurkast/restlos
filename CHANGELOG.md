@@ -1,5 +1,18 @@
 # Änderungsprotokoll
 
+## 1.5.0 – 2026-09-01
+
+- vollständige deutsche und englische grafische Oberfläche mit Auswahl für Systemsprache, Deutsch oder Englisch
+- lokalisierte Terminalhilfe und neuer einmaliger Sprachparameter `--language system|de|en`
+- optionales **Safety Backup** für geeignete Einstellungen, Anwendungsdaten und Spielstände vor endgültigem Löschen
+- Cache, Installer, Cover, Starter, Spieleordner und andere leicht erneut beschaffbare Programmdaten werden nicht unnötig archiviert
+- Entfernung wird vor der ersten Änderung abgebrochen, falls das angeforderte Safety Backup nicht vollständig erstellt werden kann
+- private Backup-Archive unter `~/.local/state/restlos/backups` mit Manifest, Symlink- und Spezialdateischutz
+- Wiederherstellungszentrum und Terminal-Wiederherstellung unterstützen nun Papierkorb-Vorgänge und Safety Backups gemeinsam
+- Wiederherstellung überschreibt weiterhin niemals neu angelegte Dateien oder Ordner
+- Protokollschema 3 verknüpft Backup-Archiv, Ursprungsorte und Wiederherstellungsstatus
+- 61 automatisierte Tests einschließlich Backup-Abbruch, sicherer Archivierung und Wiederherstellung
+
 ## 1.4.3 – 2026-08-30
 
 - GitHub-Projekt und öffentliche Autorenkennung vollständig von `jurkastl` auf `jurkast` migriert
