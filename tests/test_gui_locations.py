@@ -10,7 +10,7 @@ from restlos.locations import AppLocation, LocationResult
 from restlos.models import AppRecord, Confidence, RemovalPlan, RemovalTarget, SourceKind
 
 try:
-    from restlos.gui import Gio, Gtk, MainWindow, TargetRow
+    from restlos.gui import Gio, Gtk, MainWindow, RestlosApplication, TargetRow
     GTK_AVAILABLE = Gtk.init_check()
 except (ImportError, ValueError):
     GTK_AVAILABLE = False
@@ -33,6 +33,15 @@ class LocationGuiTests(unittest.TestCase):
         with patch.object(MainWindow, "_load_applications"):
             self.window = MainWindow(self.application)
         self.addCleanup(self.window.destroy)
+
+    def test_application_initialization_supports_baseline_gtk_and_glib(self) -> None:
+        with patch("restlos.gui.UpdateState") as state, patch("restlos.gui.LanguageSettings") as settings:
+            state.return_value.automatic_checks_enabled.return_value = False
+            settings.return_value.selected.return_value = "system"
+            application = RestlosApplication()
+        self.assertEqual(application.get_flags(), Gio.ApplicationFlags(0))
+        self.assertIsNotNone(application.lookup_action("check-updates"))
+        self.assertTrue(self.window.search.get_property("placeholder-text"))
 
     def test_target_folder_button_leaves_selection_unchanged(self) -> None:
         target = RemovalTarget(self.root, "Data", 0, Confidence.HIGH, False)

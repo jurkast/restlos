@@ -213,7 +213,8 @@ class MainWindow(Gtk.ApplicationWindow):
         sidebar.set_margin_end(8)
 
         self.search = Gtk.SearchEntry()
-        self.search.set_placeholder_text(_("Programme durchsuchen …"))
+        # The property predates the setter method, which requires GTK 4.10.
+        self.search.set_property("placeholder-text", _("Programme durchsuchen …"))
         self.search.connect("search-changed", self._on_search_changed)
         sidebar.append(self.search)
 
@@ -1197,7 +1198,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
 class RestlosApplication(Gtk.Application):
     def __init__(self) -> None:
-        super().__init__(application_id=APP_ID, flags=Gio.ApplicationFlags.DEFAULT_FLAGS)
+        # DEFAULT_FLAGS was only named in GLib 2.74; zero also supports 2.72.
+        super().__init__(application_id=APP_ID, flags=Gio.ApplicationFlags(0))
         self.update_state = UpdateState()
         self._update_check_running = False
         self._update_install_running = False

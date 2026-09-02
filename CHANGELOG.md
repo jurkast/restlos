@@ -8,7 +8,8 @@
 - Dateien und symbolische Links werden über ihren übergeordneten Ordner angezeigt, niemals als Programm gestartet
 - getrennter Hinweis auf gemeinsam genutzte Systemordner; Speicherorte werden nicht automatisch zu Löschzielen
 - deutsche und englische Texte, Fehlerbehandlung und zusätzliche Sicherheits- und Oberflächentests
-- 88 automatisierte Tests; GTK-Oberflächentests laufen auch in den Ubuntu-CI- und Release-Prüfungen
+- Kompatibilitätskorrekturen für Suchfeld und Anwendungsstart unter GTK 4.6/GLib 2.72 (Ubuntu 22.04)
+- 89 automatisierte Tests; GTK-Oberflächentests laufen auch in den Ubuntu-CI- und Release-Prüfungen
 
 ## 1.6.0 – 2026-09-01
 
