@@ -15,6 +15,7 @@ from . import APP_ID, APP_NAME, APP_TAGLINE, PROJECT_URL, __version__
 from .analyzer import RemovalAnalyzer
 from .backup import BackupManager
 from .i18n import LanguageSettings, display_text, translate as _
+from .locations import LocationResolver, LocationResult, folder_for_path
 from .models import AppRecord, Confidence, RecoveryRecord, RemovalPlan, RemovalResult, RestoreResult, SourceKind
 from .recovery import RecoveryManager
 from .remover import RemovalExecutor
@@ -92,7 +93,7 @@ class ApplicationRow(Gtk.ListBoxRow):
 
 
 class TargetRow(Gtk.ListBoxRow):
-    def __init__(self, target, changed_callback) -> None:
+    def __init__(self, target, changed_callback, open_callback) -> None:
         super().__init__()
         self.target = target
         self.set_selectable(False)
@@ -112,6 +113,7 @@ class TargetRow(Gtk.ListBoxRow):
         path_label.set_tooltip_text(str(target.path))
         labels.append(path_label)
         reason = Gtk.Label(label=display_text(target.reason), xalign=0)
+        reason.set_wrap(True)
         reason.add_css_class("muted")
         labels.append(reason)
         box.append(labels)
@@ -130,6 +132,11 @@ class TargetRow(Gtk.ListBoxRow):
         )
         side.append(confidence)
         box.append(side)
+        open_button = Gtk.Button.new_from_icon_name("folder-open-symbolic")
+        open_button.set_valign(Gtk.Align.CENTER)
+        open_button.set_tooltip_text(_("Ordner öffnen: {path}", path=target.path))
+        open_button.connect("clicked", lambda _button: open_callback(target.path))
+        box.append(open_button)
         self.set_child(box)
 
     def _on_toggled(self, check: Gtk.CheckButton, callback) -> None:
@@ -147,6 +154,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.current_plan: RemovalPlan | None = None
         self._legacy_folder_dialog: Gtk.FileChooserNative | None = None
         self._recovery_dialog: Gtk.Dialog | None = None
+        self._locations_dialog: Gtk.Dialog | None = None
         self.busy = False
 
         self._build_header()
@@ -300,10 +308,16 @@ class MainWindow(Gtk.ApplicationWindow):
         meta.append(self.detail_id)
         labels.append(meta)
         hero.append(labels)
+        hero_actions = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        hero_actions.set_valign(Gtk.Align.START)
+        self.locations_button = Gtk.Button(label=_("Speicherorte …"))
+        self.locations_button.set_tooltip_text(_("Programmdateien und zugehörige Daten vor dem Löschen ansehen"))
+        self.locations_button.connect("clicked", self._show_locations)
+        hero_actions.append(self.locations_button)
         self.analyze_button = Gtk.Button(label=_("Erneut analysieren"))
-        self.analyze_button.set_valign(Gtk.Align.START)
         self.analyze_button.connect("clicked", lambda _button: self._analyze_current())
-        hero.append(self.analyze_button)
+        hero_actions.append(self.analyze_button)
+        hero.append(hero_actions)
         outer.append(hero)
 
         self.warning_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
@@ -531,7 +545,12 @@ class MainWindow(Gtk.ApplicationWindow):
             return
         self.busy = True
         self.analyze_button.set_sensitive(False)
+        self.locations_button.set_sensitive(False)
         self.remove_button.set_sensitive(False)
+        self.current_plan = None
+        _clear_box(self.target_list)
+        _clear_box(self.action_card)
+        self.warning_box.set_visible(False)
         self.plan_summary.set_text(_("Analyse läuft …"))
         app = self.current_app
 
@@ -547,6 +566,7 @@ class MainWindow(Gtk.ApplicationWindow):
     def _analysis_loaded(self, plan: RemovalPlan | None, error: str | None) -> bool:
         self.busy = False
         self.analyze_button.set_sensitive(True)
+        self.locations_button.set_sensitive(True)
         if error or plan is None:
             self.plan_summary.set_text(
                 _("Analyse fehlgeschlagen: {error}", error=error or _("unbekannter Fehler"))
@@ -576,7 +596,7 @@ class MainWindow(Gtk.ApplicationWindow):
             self.action_card.set_visible(False)
 
         for target in plan.targets:
-            self.target_list.append(TargetRow(target, self._update_plan_summary))
+            self.target_list.append(TargetRow(target, self._update_plan_summary, self._open_folder))
         if not plan.targets:
             label = Gtk.Label(label=_("Keine zusätzlichen Benutzerdaten gefunden"))
             label.set_margin_top(18)
@@ -590,6 +610,117 @@ class MainWindow(Gtk.ApplicationWindow):
             self.warning_box.append(line)
         self.warning_box.set_visible(bool(plan.warnings))
         self._update_plan_summary()
+        return False
+
+    def _open_folder(self, path: Path, parent: Gtk.Window | None = None) -> None:
+        try:
+            folder = folder_for_path(path)
+            # Select a directory handler explicitly. Never launch the target
+            # file's MIME handler (it might be an executable or .desktop file).
+            manager = Gio.AppInfo.get_default_for_type("inode/directory", False)
+            if manager is None:
+                raise OSError(_("Es ist kein Dateimanager für Ordner eingerichtet."))
+            if not manager.launch([Gio.File.new_for_path(str(folder))], None):
+                raise OSError(_("Der Dateimanager konnte nicht gestartet werden."))
+        except (OSError, ValueError, RuntimeError, GLib.Error) as error:
+            dialog = Gtk.MessageDialog(
+                transient_for=parent or self,
+                modal=True,
+                message_type=Gtk.MessageType.ERROR,
+                buttons=Gtk.ButtonsType.CLOSE,
+                text=_("Ordner konnte nicht geöffnet werden"),
+            )
+            dialog.set_property("secondary-text", _("Pfad: {path}\n\n{error}", path=path, error=error))
+            dialog.connect("response", lambda item, _response: item.destroy())
+            dialog.present()
+
+    def _show_locations(self, _button: Gtk.Button) -> None:
+        if self.current_app is None or self.busy:
+            return
+        if self._locations_dialog is not None:
+            self._locations_dialog.present()
+            return
+        app = self.current_app
+        plan = self.current_plan
+        dialog = Gtk.Dialog(title=_("Speicherorte – {name}", name=app.name), transient_for=self, modal=True)
+        dialog.set_default_size(800, 560)
+        dialog.add_button(_("Schließen"), Gtk.ResponseType.CLOSE)
+        dialog.connect("response", self._close_locations)
+        dialog.connect("close-request", self._locations_close_requested)
+        self._locations_dialog = dialog
+        content = dialog.get_content_area()
+        content.set_spacing(12)
+        for edge in ("top", "bottom", "start", "end"):
+            getattr(content, f"set_margin_{edge}")(16)
+        note = Gtk.Label(
+            label=_("Programme können mehrere Speicherorte haben. Geöffnet wird nur der Ordner, niemals die Programmdatei. Die Lösch-Auswahl bleibt unverändert. Gemeinsame Systemordner können auch Dateien anderer Programme enthalten."),
+            xalign=0,
+        )
+        note.set_wrap(True)
+        content.append(note)
+        status = Gtk.Label(label=_("Speicherorte werden ermittelt …"), xalign=0)
+        status.set_wrap(True)
+        status.add_css_class("muted")
+        content.append(status)
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_vexpand(True)
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        locations = Gtk.ListBox()
+        locations.set_selection_mode(Gtk.SelectionMode.NONE)
+        scroll.set_child(locations)
+        content.append(scroll)
+        dialog.present()
+
+        def worker() -> None:
+            try:
+                result = LocationResolver().inspect(app, plan)
+                GLib.idle_add(self._locations_loaded, dialog, locations, status, result, None)
+            except Exception as error:
+                GLib.idle_add(self._locations_loaded, dialog, locations, status, None, str(error))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _close_locations(self, dialog: Gtk.Dialog, _response: int) -> None:
+        if self._locations_dialog is dialog:
+            self._locations_dialog = None
+        dialog.destroy()
+
+    def _locations_close_requested(self, dialog: Gtk.Dialog) -> bool:
+        self._close_locations(dialog, Gtk.ResponseType.CLOSE)
+        return True
+
+    def _locations_loaded(
+        self, dialog: Gtk.Dialog, locations: Gtk.ListBox, status: Gtk.Label,
+        result: LocationResult | None, error: str | None,
+    ) -> bool:
+        if self._locations_dialog is not dialog:
+            return False
+        if error or result is None:
+            status.set_text(_("Speicherorte konnten nicht ermittelt werden: {error}", error=error or _("unbekannter Fehler")))
+            return False
+        summary = (_("{count} Speicherort(e) gefunden", count=len(result.locations)) if result.locations
+                   else _("Keine vorhandenen lokalen Speicherorte gefunden."))
+        status.set_text("\n".join([summary, *result.warnings]))
+        for location in result.locations:
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+            row.add_css_class("target-row")
+            labels = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+            labels.set_hexpand(True)
+            path = Gtk.Label(label=str(location.path), xalign=0)
+            path.set_selectable(True)
+            path.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
+            path.set_tooltip_text(str(location.path))
+            labels.append(path)
+            reason = Gtk.Label(label=display_text(location.reason), xalign=0)
+            reason.set_wrap(True)
+            reason.add_css_class("muted")
+            labels.append(reason)
+            row.append(labels)
+            button = Gtk.Button(label=_("Ordner öffnen"))
+            button.set_valign(Gtk.Align.CENTER)
+            button.connect("clicked", lambda _button, value=location.path: self._open_folder(value, dialog))
+            row.append(button)
+            locations.append(row)
         return False
 
     def _update_plan_summary(self) -> None:

@@ -37,7 +37,12 @@ Restlos needs to inspect host package databases, processes, and application
 data, and therefore declares `confinement: classic`. A classically confined
 Snap must receive manual approval from the Snap Store before publication.
 
-The reserved application name should be `restlos-uninstaller`. Before the
+The application name `restlos-uninstaller` is registered, but no Snap revision
+has been uploaded or approved. The [classic-confinement review policy](https://snapcraft.io/docs/reference/administration/reviewing-classic-confinement-snaps/)
+lists management snaps and direct `pkexec` access as unsupported use cases.
+Restlos currently has these requirements, so eligibility must be clarified
+with the Store reviewers before assuming this distribution route is viable.
+Native packages remain the available distribution method. Before the
 first upload, build the Snap in a dedicated test environment, verify all native
 package-manager previews on the host, request classic-confinement approval,
 and only then promote it from an edge or beta channel.

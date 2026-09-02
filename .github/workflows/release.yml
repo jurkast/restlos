@@ -19,7 +19,7 @@ jobs:
       - name: Systemabhängigkeiten installieren
         run: |
           sudo apt-get update
-          sudo apt-get install --yes appstream desktop-file-utils gir1.2-gtk-4.0 python3-gi
+          sudo apt-get install --yes appstream desktop-file-utils gir1.2-gtk-4.0 python3-gi dbus-x11 xvfb
 
       - name: Tag und Projektversion vergleichen
         run: |
@@ -30,7 +30,7 @@ jobs:
         run: |
           python3 -m compileall -q restlos tests
           bash -n install.sh update.sh uninstall.sh scripts/build-deb.sh scripts/build-release.sh
-          python3 -m unittest discover -s tests -v
+          dbus-run-session -- xvfb-run -a python3 -m unittest discover -s tests -v
 
       - name: Release-Dateien erzeugen
         run: |

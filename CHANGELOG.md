@@ -1,5 +1,15 @@
 # Änderungsprotokoll
 
+## 1.7.0 – 2026-09-02
+
+- neue Übersicht **Speicherorte …** für Programmdateien, Spieleordner und zugehörige Daten
+- Ordnerknopf direkt an jedem Dateipfad im Löschplan, auch bei nicht zum Löschen ausgewählten Daten
+- schreibgeschützte Paketdateiabfragen für APT, DNF/RPM, pacman, Zypper und Flatpak sowie Snap-Installationsordner
+- Dateien und symbolische Links werden über ihren übergeordneten Ordner angezeigt, niemals als Programm gestartet
+- getrennter Hinweis auf gemeinsam genutzte Systemordner; Speicherorte werden nicht automatisch zu Löschzielen
+- deutsche und englische Texte, Fehlerbehandlung und zusätzliche Sicherheits- und Oberflächentests
+- 88 automatisierte Tests; GTK-Oberflächentests laufen auch in den Ubuntu-CI- und Release-Prüfungen
+
 ## 1.6.0 – 2026-09-01
 
 - natives `.deb`-Paket für Zorin OS, Ubuntu und Debian mit automatischer Abhängigkeitsauflösung

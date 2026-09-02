@@ -28,7 +28,7 @@ jobs:
       - name: Systemabhängigkeiten installieren
         run: |
           sudo apt-get update
-          sudo apt-get install --yes appstream desktop-file-utils gir1.2-gtk-4.0 python3-gi
+          sudo apt-get install --yes appstream desktop-file-utils gir1.2-gtk-4.0 python3-gi dbus-x11 xvfb
 
       - name: Python- und Shell-Dateien prüfen
         run: |
@@ -36,7 +36,7 @@ jobs:
           bash -n install.sh update.sh uninstall.sh scripts/build-deb.sh scripts/build-release.sh
 
       - name: Regressionstests ausführen
-        run: python3 -m unittest discover -s tests -v
+        run: dbus-run-session -- xvfb-run -a python3 -m unittest discover -s tests -v
 
       - name: Isolierte Installation prüfen
         run: |

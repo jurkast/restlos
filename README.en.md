@@ -48,10 +48,10 @@ Download the latest package from [GitHub Releases](https://github.com/jurkast/re
 Install the native Debian package through the graphical software manager or with APT. APT resolves the required GTK and Python dependencies automatically:
 
 ```bash
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.6.0/restlos-uninstaller_1.6.0-1_all.deb
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.6.0/restlos-uninstaller_1.6.0-1_all.deb.sha256
-sha256sum --check restlos-uninstaller_1.6.0-1_all.deb.sha256
-sudo apt install ./restlos-uninstaller_1.6.0-1_all.deb
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.7.0/restlos-uninstaller_1.7.0-1_all.deb
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.7.0/restlos-uninstaller_1.7.0-1_all.deb.sha256
+sha256sum --check restlos-uninstaller_1.7.0-1_all.deb.sha256
+sudo apt install ./restlos-uninstaller_1.7.0-1_all.deb
 ```
 
 The application-menu entry explicitly starts the system package. If an older per-user installation still exists at `~/.local/bin/restlos`, use `/usr/bin/restlos` to address the package version unambiguously.
@@ -61,11 +61,11 @@ The application-menu entry explicitly starts the system package. If an older per
 For Fedora, Arch Linux, openSUSE, or a per-user installation:
 
 ```bash
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.6.0/Restlos-1.6.0.tar.gz
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.6.0/Restlos-1.6.0.sha256
-sha256sum --check Restlos-1.6.0.sha256
-tar -xzf Restlos-1.6.0.tar.gz
-cd Restlos-1.6.0
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.7.0/Restlos-1.7.0.tar.gz
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.7.0/Restlos-1.7.0.sha256
+sha256sum --check Restlos-1.7.0.sha256
+tar -xzf Restlos-1.7.0.tar.gz
+cd Restlos-1.7.0
 ./install.sh
 ```
 
@@ -86,6 +86,21 @@ sudo zypper install python3-gobject typelib-1_0-Gtk-4_0 polkit
 ```
 
 Restlos Uninstaller is then available from the application menu. For the universal archive, the update-compatible terminal command remains `~/.local/bin/restlos`.
+
+## Inspect files before removal
+
+Starting with version 1.7.0, **File locations…** shows known
+program and data paths for the selected application. **Open folder** opens a
+location in the default file manager. Each path in the removal plan also has a
+folder button. Files, AppImages, desktop launchers and symbolic links are never
+executed: their containing folder opens instead. The removal selection stays
+unchanged, including deliberately deselected data.
+
+Native packages may span multiple shared system folders. These are listed only
+for inspection, not added as deletion targets. Missing paths, failed package
+queries and missing file managers are handled; a warning appears when the list
+reaches its limit of 250 locations. Restlos does not delete anything when opening
+a folder; you can still make changes yourself in the file manager.
 
 ## Safety Backup, recovery and post-removal verification
 
