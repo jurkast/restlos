@@ -1,5 +1,17 @@
 # Änderungsprotokoll
 
+## 1.8.0 – 2026-09-03
+
+- zeigt bei gemeinsam referenzierten Daten andere bekannte Anwendungen, Quelle und konkreten Referenzpfad; solche Ziele sind gesperrt, bleiben aber im Dateimanager zugänglich
+- berücksichtigt gemeinsame Wine-Präfixe aus Lutris-Konfigurationen auch dann, wenn die Spielordner unterschiedlich sind
+- prüft Löschplan, bekannten Programmbestand, Paketversionen, native Entfernungssimulation und Dateimetadaten vor der Entfernung erneut
+- verlangt bei Änderungen eine neue Analyse und Bestätigung; auch beim Beenden gespeicherte Spielstände und Änderungen während eines Safety Backups führen zum Abbruch
+- prüft jeden verbleibenden Dateipfad unmittelbar vor seiner Entfernung und interne Bibliotheksdaten vor ihrer Änderung
+- blockiert nicht vollständig prüfbare Ziele, Spezialdateien, Mountpoints einschließlich Bind-Mounts sowie unsichere übergeordnete Symlinks
+- verhindert Flatpak-/Snap-Purge-Aktionen, wenn diese geschützte gemeinsame Daten mitentfernen könnten
+- ergänzt deutsch-/englischsprachige Hinweise, Schutzinformationen im lokalen Protokoll und Regressionstests
+- Grenze: bekannte Zuordnungen und Metadatenprüfungen sind keine vollständige Besitzermittlung oder atomare Transaktion; bereits ausgeführte Schritte werden bei einem späteren Abbruch nicht automatisch rückgängig gemacht
+
 ## 1.7.0 – 2026-09-02
 
 - neue Übersicht **Speicherorte …** für Programmdateien, Spieleordner und zugehörige Daten

@@ -173,7 +173,7 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as error:
         print(error, file=sys.stderr)
         return 2
-    plan = RemovalAnalyzer().analyze(app)
+    plan = RemovalAnalyzer().analyze(app, applications=applications)
 
     if arguments.command == "analyze":
         if arguments.json:
@@ -188,8 +188,13 @@ def main(argv: list[str] | None = None) -> int:
                     f"  [{marker}] {target.path} – {display_text(target.reason)}, "
                     f"{format_size(target.size)}, {display_text(target.confidence.value)}"
                 )
+                for use in target.shared_with:
+                    print(_("  GESCHÜTZT: {name} ({source}) – {evidence}: {path}", name=use.app_name,
+                            source=display_text(use.source), evidence=display_text(use.evidence), path=use.reference_path))
             for warning in plan.warnings:
                 print(_("  WARNUNG: {warning}", warning=display_text(warning)))
+            if plan.safety_error:
+                print(_("  GESPERRT: {error}", error=plan.safety_error))
             print(_("Ausgewählte Benutzerdaten: {size}", size=format_size(plan.total_size)))
         return 0
 

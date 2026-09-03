@@ -4,6 +4,7 @@ import json
 import os
 import re
 from pathlib import Path
+from copy import deepcopy
 
 from .models import AppRecord, Confidence, RemovalAction, RemovalPlan, RemovalTarget, SourceKind
 from .package_managers import (
@@ -13,6 +14,9 @@ from .package_managers import (
     adapter_for_source,
 )
 from .utils import command_executable, extract_home_paths, is_within, normalize_key, path_size
+from .i18n import translate as _
+from .safety import seal_plan
+from .sharing import protect_shared_targets
 
 
 class UnsafeTargetError(ValueError):
@@ -66,6 +70,13 @@ class PathGuard:
             self.home / "Downloads",
             self.home / "Desktop",
             self.home / "Schreibtisch",
+            self.home / "Documents",
+            self.home / "Dokumente",
+            self.home / "Pictures",
+            self.home / "Bilder",
+            self.home / "Music",
+            self.home / "Musik",
+            self.home / "Videos",
             Path("/usr"),
             Path("/usr/local"),
             Path("/opt"),
@@ -73,6 +84,8 @@ class PathGuard:
         }
 
     def validate(self, path: Path, trusted_roots: tuple[Path, ...] = ()) -> None:
+        if not path.is_absolute() or ".." in path.parts or "\0" in str(path):
+            raise UnsafeTargetError("Pfad ist nicht absolut oder enthält unsichere Bestandteile")
         absolute = path.absolute()
         if absolute in self.protected:
             raise UnsafeTargetError(f"geschützter Pfad: {absolute}")
@@ -85,6 +98,16 @@ class PathGuard:
             raise UnsafeTargetError(f"Pfad liegt außerhalb sicherer Benutzerbereiche: {absolute}")
         if len(absolute.parts) < 4:
             raise UnsafeTargetError(f"Pfad ist zu breit: {absolute}")
+        # Follow ancestors only: deleting the final symlink is safe, traversing
+        # a link into an unrelated directory is not. Standard library symlinks
+        # (e.g. ~/.steam) and explicitly registered external roots still work.
+        effective = absolute.parent.resolve() / absolute.name
+        effective_roots = tuple(root.resolve() for root in self.allowed_roots)
+        effective_trusted = tuple(root.parent.resolve() / root.name for root in safe_trusted)
+        if effective in {root.resolve() for root in self.protected} and not absolute.is_symlink():
+            raise UnsafeTargetError(f"geschützter aufgelöster Pfad: {effective}")
+        if not any(is_within(effective, root) for root in (*effective_roots, *effective_trusted)):
+            raise UnsafeTargetError(f"übergeordneter Symlink verlässt den erlaubten Bereich: {absolute}")
 
 
 class RemovalAnalyzer:
@@ -92,7 +115,12 @@ class RemovalAnalyzer:
         self.home = (home or Path.home()).absolute()
         self.guard = PathGuard(self.home)
 
-    def analyze(self, app: AppRecord) -> RemovalPlan:
+    def analyze(self, app: AppRecord, *, applications: list[AppRecord] | None = None) -> RemovalPlan:
+        if applications is None:
+            from .scanners import ApplicationScanner
+            applications = ApplicationScanner(self.home).scan()
+        # Refresh stale GUI entries from the same inventory used for sharing.
+        app = deepcopy(next((item for item in applications if item.key == app.key), app))
         plan = RemovalPlan(app=app)
 
         if self._add_managed_action(plan, app):
@@ -119,6 +147,13 @@ class RemovalAnalyzer:
             )
         if not plan.actions and not plan.targets:
             plan.warnings.append("Es wurden keine sicher zuordenbaren Löschziele gefunden.")
+        protect_shared_targets(plan, applications, self.home)
+        plan.warnings.append(_("Die Schutzprüfung berücksichtigt bekannte Programmeinträge, keine unbekannten oder nicht lesbaren Installationen."))
+        if not plan.safety_error:
+            try:
+                seal_plan(plan, applications, home=self.home)
+            except (OSError, ValueError, RuntimeError) as error:
+                plan.safety_error = _("Sicherheitsprüfung nicht abgeschlossen: {error}", error=error)
         return plan
 
     def discover_targets(self, app: AppRecord) -> list[RemovalTarget]:
@@ -252,6 +287,7 @@ class RemovalAnalyzer:
             )
             return True
         removed = preview.removed_packages
+        plan.package_preview = tuple(sorted(set(removed)))
         critical = sorted({name for name in removed if adapter.is_protected(name)})
         if critical:
             plan.warnings.append(
@@ -333,7 +369,12 @@ class RemovalAnalyzer:
         prefix = app.metadata.get("wine_prefix", "")
         if prefix:
             path = Path(os.path.expandvars(os.path.expanduser(prefix))).absolute()
-            if path != self.home / ".wine" and is_within(path, self.home):
+            # A literal Lutris path is useful evidence of sharing, but alone
+            # must not turn an arbitrary folder into a new deletion target.
+            prefix_confirmed = app.source != SourceKind.LUTRIS or (
+                (path / "drive_c").is_dir() and (path / "system.reg").is_file()
+            )
+            if prefix_confirmed and path != self.home / ".wine" and is_within(path, self.home):
                 result.append((path, "Eigenes Wine-Präfix mit allen Windows-Daten", Confidence.CERTAIN))
         return result
 

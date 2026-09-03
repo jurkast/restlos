@@ -5,10 +5,12 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from restlos.models import AppRecord, Confidence, RecoveryItem, RemovalPlan, RemovalTarget, SourceKind
 from restlos.recovery import RecoveryManager, TrashBackend
 from restlos.remover import RemovalExecutor
+from restlos.safety import seal_plan
 
 
 class FakeTrashBackend:
@@ -43,6 +45,10 @@ class FakeTrashBackend:
 
 class RecoveryTests(unittest.TestCase):
     def setUp(self) -> None:
+        for name in ("restlos.scanners.ApplicationScanner.scan", "restlos.remover.RemovalExecutor.related_processes"):
+            mocked = patch(name, return_value=[])
+            mocked.start()
+            self.addCleanup(mocked.stop)
         self.temporary = tempfile.TemporaryDirectory()
         self.home = Path(self.temporary.name)
         for path in (".config", ".cache", ".local/share", ".local/state"):
@@ -67,6 +73,7 @@ class RecoveryTests(unittest.TestCase):
             targets=[RemovalTarget(config, "Einstellungen", 16, Confidence.CERTAIN)],
         )
 
+        seal_plan(plan, [], home=self.home)
         result = RemovalExecutor(self.home, trash=self.trash).execute(plan, permanent=False)
 
         self.assertTrue(result.success, result.errors)
@@ -97,6 +104,7 @@ class RecoveryTests(unittest.TestCase):
             app=self.app,
             targets=[RemovalTarget(config, "Einstellungen", 3, Confidence.CERTAIN)],
         )
+        seal_plan(plan, [], home=self.home)
         removed = RemovalExecutor(self.home, trash=self.trash).execute(plan, permanent=False)
         config.mkdir()
         (config / "new.txt").write_text("new", encoding="utf-8")
@@ -123,6 +131,7 @@ class RecoveryTests(unittest.TestCase):
             ],
         )
 
+        seal_plan(plan, [], home=self.home)
         result = RemovalExecutor(self.home, trash=self.trash).execute(plan, permanent=True)
 
         self.assertTrue(result.success, result.errors)

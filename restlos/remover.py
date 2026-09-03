@@ -17,6 +17,9 @@ from .analyzer import PathGuard, RemovalAnalyzer, UnsafeTargetError
 from .backup import BackupError, BackupManager
 from .models import RecoveryItem, RemovalAction, RemovalPlan, RemovalResult, SourceKind
 from .recovery import TrashBackend
+from .i18n import translate as _
+from .safety import ReviewRequired, optional_fingerprint
+from .scanners import ApplicationScanner
 
 
 ProgressCallback = Callable[[str, float], None]
@@ -29,6 +32,7 @@ class RemovalExecutor:
         *,
         trash: TrashBackend | None = None,
         backup: BackupManager | None = None,
+        inventory_provider: Callable[[], list] | None = None,
     ) -> None:
         self.home = (home or Path.home()).absolute()
         self.guard = PathGuard(self.home)
@@ -39,6 +43,7 @@ class RemovalExecutor:
             self.state_home = Path(configured).absolute() if configured else self.home / ".local/state"
         self.trash = trash or TrashBackend()
         self.backup = backup or BackupManager(self.home, state_home=self.state_home)
+        self.inventory_provider = inventory_provider or (lambda: ApplicationScanner(self.home).scan())
 
     def related_processes(self, plan: RemovalPlan) -> list[tuple[int, str]]:
         roots = [target.path.absolute() for target in plan.selected_targets]
@@ -123,6 +128,16 @@ class RemovalExecutor:
         if create_backup and not permanent:
             result.errors.append("Safety Backup und Papierkorbmodus können nicht gleichzeitig verwendet werden.")
             return self._finish(plan, result, permanent)
+        callback(_("Löschplan und bekannte Datenzuordnungen werden erneut geprüft …"), 0.01)
+        try:
+            if plan.snapshot is None or plan.safety_error:
+                raise ReviewRequired(plan.safety_error or _("Für diesen Löschplan fehlt die Sicherheitsprüfung. Bitte erneut analysieren."))
+            plan.snapshot.validate_environment(plan, self.inventory_provider())
+            for target in plan.selected_targets:
+                self.guard.validate(target.path, self._trusted_paths(plan))
+            plan.snapshot.validate_files(plan)
+        except (OSError, ValueError, RuntimeError, sqlite3.Error) as error:
+            return self._review_failed(plan, result, permanent, error)
         processes = self.related_processes(plan)
         if processes and stop_processes:
             callback("Laufende Prozesse werden beendet …", 0.02)
@@ -130,6 +145,11 @@ class RemovalExecutor:
         elif processes:
             result.errors.append("Die Anwendung läuft noch und wurde nicht beendet.")
             return self._finish(plan, result, permanent)
+        try:
+            # Shutdown can write saves/settings: never silently approve them.
+            plan.snapshot.validate_files(plan)
+        except (OSError, ValueError, RuntimeError) as error:
+            return self._review_failed(plan, result, permanent, error)
         if create_backup:
             callback("Safety Backup wird erstellt …", 0.03)
             try:
@@ -141,12 +161,25 @@ class RemovalExecutor:
                 result.errors.append(f"Safety Backup fehlgeschlagen; es wurde nichts entfernt: {error}")
                 return self._finish(plan, result, permanent)
 
+        try:
+            # Backups may take time. Recheck before starting the first package
+            # operation, without refreshing the approved baseline. Authentication
+            # happens inside that operation and is not atomic with this check.
+            plan.snapshot.validate_environment(plan, self.inventory_provider())
+            plan.snapshot.validate_files(plan)
+        except (OSError, ValueError, RuntimeError, sqlite3.Error) as error:
+            return self._review_failed(plan, result, permanent, error)
+
         total_steps = max(len(plan.actions) + len(plan.selected_targets), 1)
         completed_steps = 0
         external_actions = [action for action in plan.actions if not action.internal_kind]
         internal_actions = [action for action in plan.actions if action.internal_kind]
         for action in external_actions:
             callback(action.label, completed_steps / total_steps)
+            try:
+                plan.snapshot.validate_definition(plan)
+            except ReviewRequired as error:
+                return self._review_failed(plan, result, permanent, error)
             try:
                 process = subprocess.run(
                     list(action.command),
@@ -173,7 +206,16 @@ class RemovalExecutor:
         for target in sorted(plan.selected_targets, key=lambda item: len(item.path.parts), reverse=True):
             callback(f"Entferne {target.path}", completed_steps / total_steps)
             try:
+                plan.snapshot.validate_definition(plan)
+                plan.snapshot.validate_target(target.path, allow_missing=bool(external_actions))
                 self.guard.validate(target.path, self._trusted_paths(plan))
+            except (OSError, ValueError, RuntimeError) as error:
+                return self._review_failed(plan, result, permanent, error)
+            try:
+                if external_actions and not os.path.lexists(target.path):
+                    result.removed_paths.append(str(target.path))
+                    completed_steps += 1
+                    continue
                 if permanent:
                     self._delete_permanently(target.path)
                 else:
@@ -189,6 +231,18 @@ class RemovalExecutor:
             for action in internal_actions:
                 callback(action.label, completed_steps / total_steps)
                 try:
+                    plan.snapshot.validate_definition(plan)
+                    for key in ("database", "path", "cache"):
+                        value = action.parameters.get(key)
+                        if not value:
+                            continue
+                        controls = [value, value + "-wal"] if value.endswith(".db") else [value]
+                        for path in controls:
+                            if plan.snapshot.controls.get(path) != optional_fingerprint(Path(path)):
+                                raise ReviewRequired(_("Programm- oder Bibliotheksinformationen wurden verändert: {path}", path=path))
+                except (OSError, ValueError, RuntimeError) as error:
+                    return self._review_failed(plan, result, permanent, error)
+                try:
                     output = self._execute_internal_action(action)
                     if output:
                         result.action_output.append(f"{action.label}\n{output}")
@@ -201,6 +255,12 @@ class RemovalExecutor:
         callback("Kontrollscan nach verbliebenen Daten …", 0.98)
         self._control_scan(plan, result)
         result.success = not result.errors
+        return self._finish(plan, result, permanent)
+
+    def _review_failed(self, plan: RemovalPlan, result: RemovalResult, permanent: bool, error: Exception) -> RemovalResult:
+        result.review_required = True
+        result.errors.append(str(error))
+        result.errors.append(_("Abgebrochen. Bitte erneut analysieren und den neuen Löschplan bestätigen. Bereits ausgeführte Schritte werden nicht automatisch rückgängig gemacht."))
         return self._finish(plan, result, permanent)
 
     def _trusted_paths(self, plan: RemovalPlan) -> tuple[Path, ...]:
@@ -360,6 +420,8 @@ class RemovalExecutor:
                 "kept_paths": result.kept_paths,
                 "verification_error": result.verification_error,
                 "errors": result.errors,
+                "review_required": result.review_required,
+                "shared_paths": [target.to_dict() for target in plan.targets if target.shared_with],
             }
             temporary_name = ""
             try:

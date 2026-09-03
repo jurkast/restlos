@@ -13,6 +13,10 @@ from restlos.utils import CommandResult
 
 class AnalyzerTests(unittest.TestCase):
     def setUp(self) -> None:
+        for name, value in (("restlos.scanners.ApplicationScanner.scan", []), ("restlos.safety.package_state", "test-packages")):
+            mocked = patch(name, return_value=value)
+            mocked.start()
+            self.addCleanup(mocked.stop)
         self.temporary = tempfile.TemporaryDirectory()
         self.home = Path(self.temporary.name) / "home"
         self.home.mkdir()
