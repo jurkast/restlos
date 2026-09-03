@@ -26,6 +26,8 @@
 - sucht app-spezifische Daten in `.config`, `.cache`, `.local/share`, `.local/state`, `.var/app`, `snap`, `Applications`, `Games`, `Downloads` und auf dem Desktop
 - liest bei manuellen Startern referenzierte Installationspfade aus, ohne den Starter auszuführen
 - zeigt Pfade, Begründung, Trefferqualität und Größe vor dem Löschen
+- zeigt unter **Geschützt – wer braucht diese Daten noch?** bekannte andere Anwendungen mit konkretem Referenzpfad; gemeinsam referenzierte Löschziele sind gesperrt
+- prüft vor dem Entfernen erneut auf geänderte Dateien, Paketstände und bekannte Datenzuordnungen und verlangt bei Änderungen eine neue Bestätigung nach erneuter Analyse
 - entfernt native Pakete über APT, DNF, pacman oder Zypper sowie Flatpaks mit `--delete-data` und Snaps mit `--purge`
 - simuliert jede native Paketentfernung und blockiert sie, falls kritische Systemkomponenten betroffen wären
 - erkennt laufende Prozesse innerhalb der ausgewählten Programmordner
@@ -60,10 +62,10 @@ Die aktuelle Ausgabe von der [Release-Seite](https://github.com/jurkast/restlos/
 Das native Debian-Paket wird über die grafische Softwareverwaltung oder vollständig im Terminal installiert. APT installiert dabei die benötigten GTK- und Python-Abhängigkeiten automatisch:
 
 ```bash
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.7.0/restlos-uninstaller_1.7.0-1_all.deb
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.7.0/restlos-uninstaller_1.7.0-1_all.deb.sha256
-sha256sum --check restlos-uninstaller_1.7.0-1_all.deb.sha256
-sudo apt install ./restlos-uninstaller_1.7.0-1_all.deb
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.8.0/restlos-uninstaller_1.8.0-1_all.deb
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.8.0/restlos-uninstaller_1.8.0-1_all.deb.sha256
+sha256sum --check restlos-uninstaller_1.8.0-1_all.deb.sha256
+sudo apt install ./restlos-uninstaller_1.8.0-1_all.deb
 ```
 
 Der Menüeintrag startet ausdrücklich die systemweite Paketversion. Falls daneben eine ältere Benutzerinstallation unter `~/.local/bin/restlos` liegt, lautet der eindeutige Terminalpfad `/usr/bin/restlos`.
@@ -73,11 +75,11 @@ Der Menüeintrag startet ausdrücklich die systemweite Paketversion. Falls daneb
 Für Fedora, Arch Linux, openSUSE oder eine benutzerbezogene Installation:
 
 ```bash
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.7.0/Restlos-1.7.0.tar.gz
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.7.0/Restlos-1.7.0.sha256
-sha256sum --check Restlos-1.7.0.sha256
-tar -xzf Restlos-1.7.0.tar.gz
-cd Restlos-1.7.0
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.8.0/Restlos-1.8.0.tar.gz
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.8.0/Restlos-1.8.0.sha256
+sha256sum --check Restlos-1.8.0.sha256
+tar -xzf Restlos-1.8.0.tar.gz
+cd Restlos-1.8.0
 ./install.sh
 ```
 
@@ -160,13 +162,13 @@ Unter **Menü → Automatisch nach Updates suchen** lässt sich die Startprüfun
 Der Installer ist weiterhin versionsbasiert und kann auch manuell ausgeführt werden. Eine neue lokale Ausgabe wird so installiert:
 
 ```bash
-./update.sh /pfad/zu/Restlos-1.7.0.tar.gz
+./update.sh /pfad/zu/Restlos-1.8.0.tar.gz
 ```
 
 Für ein über HTTPS geladenes Release ist eine bekannte SHA-256-Prüfsumme Pflicht:
 
 ```bash
-./update.sh 'https://github.com/jurkast/restlos/releases/download/v1.7.0/Restlos-1.7.0.tar.gz' '64-stellige-sha256-prüfsumme'
+./update.sh 'https://github.com/jurkast/restlos/releases/download/v1.8.0/Restlos-1.8.0.tar.gz' '64-stellige-sha256-prüfsumme'
 ```
 
 Updates werden zuerst in ein neues Versionsverzeichnis kopiert und geprüft. Erst danach wird der `current`-Symlink atomar umgeschaltet. Einstellungen und Entfernungshistorie bleiben erhalten.
@@ -184,6 +186,16 @@ Mit Einstellungen und Historie:
 ```
 
 ## Sicherheitsmodell
+
+### Neue Schutzprüfung (ab Version 1.8.0)
+
+Restlos vergleicht explizite Installationspfade, Programmstarter, App-Kennungen und Spielebibliotheksdaten mit anderen erkannten Anwendungen. Bei Überschneidungen bleibt der betroffene Pfad erhalten. Der ausklappbare Nachweis nennt Anwendung, Quelle und Referenzpfad; **Ordner öffnen** bleibt verfügbar. Ähnliche Namen allein sind kein Beleg für gemeinsame Nutzung. Unbekannte oder nicht lesbare Installationen kann diese Prüfung nicht berücksichtigen. Kein angezeigter Mitnutzer bedeutet daher nicht garantiert exklusive Nutzung.
+
+Die Vorschau hält einen nur im Arbeitsspeicher gespeicherten Prüfstand fest. Vor dem Beenden von Prozessen, nach deren Beendigung, nach einem optionalen Backup und unmittelbar vor der jeweiligen Dateientfernung werden relevante Zustände erneut geprüft. Vor Paketaktionen werden zusätzlich der erkannte Programmbestand, Paketversionen und bei nativen Paketen die Entfernungssimulation verglichen. Bei Änderungen wird die Ausführung angehalten: **Erneut analysieren** erstellt eine neue Vorschau, löscht aber nicht automatisch weiter. Das kann auch nötig sein, wenn ein Spiel beim Beenden neue Spielstände schreibt. Ein bereits erstelltes Backup bleibt erhalten; vorher erfolgreich ausgeführte Schritte werden nicht automatisch zurückgenommen.
+
+Die Dateiprüfung erfasst Pfad- und Verzeichnisidentität, Dateigröße, Änderungszeiten und Symlinkziele, nicht Dateiinhalte. Sie folgt keinen Symlinks innerhalb eines Löschziels. Unlesbare Bereiche, Spezialdateien, Mountpoints/Bind-Mounts und überschrittene Prüfgrenzen (höchstens 250.000 Einträge und 30 Sekunden je Pfadprüfung) sperren die Freigabe. Große Ziele können deshalb eine manuelle Prüfung außerhalb von Restlos erfordern. Es gibt keinen dauerhaften Hintergrundwächter und keine Garantie gegen jede zeitgleiche oder absichtlich manipulierte Änderung. Insbesondere Passwortabfrage und Ausführung eines externen Paketmanagers sind keine atomare Transaktion mit Restlos' vorheriger Prüfung.
+
+### Bestehende Schutzregeln
 
 Restlos führt niemals den Starter einer zu untersuchenden Anwendung aus. Paketkennungen werden validiert und Befehle werden als Argumentlisten statt als Shelltext gestartet. APT, DNF, pacman und Zypper müssen den vollständigen Entfernungsvorgang zuerst ohne Änderungen berechnen. Schlägt diese Vorschau fehl oder enthält sie geschützte Systempakete, wird die Paketaktion blockiert. Breite oder gemeinsam verwendete Pfade wie das Home-Verzeichnis, `.config`, `.local/share`, der gesamte Flatpak-, Steam- oder Lutris-Speicher und das Standard-Wine-Präfix sind gesperrt. Symlinks werden selbst gelöscht und nicht bis zu ihrem Ziel verfolgt. Externe Spielebibliotheken werden nur über die konkreten, vom jeweiligen Launcher registrierten Spielpfade freigegeben.
 

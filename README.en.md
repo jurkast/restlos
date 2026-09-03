@@ -24,9 +24,19 @@
 - optional Safety Backups of eligible settings, application data and save games before permanent deletion
 - a complete German and English interface with an in-app language selector
 - a post-removal scan that reports additional residual paths separately from intentionally retained data
+- locked shared paths with an expandable list of known other applications and the specific references linking them
+- a pre-removal recheck of file metadata, known application associations, package state and native removal simulations
 - automatic daily release checks with an explicitly confirmed, verified in-app update
 
 For supported games, Restlos can include game folders, dedicated prefixes, manifests, workshop content, shader caches, local saves, screenshots, cover art, launchers and settings. Shared launcher directories and the default Wine prefix remain protected.
+
+## New safety checks (starting with version 1.8.0)
+
+**Protected – who else needs this data?** shows other detected applications that explicitly reference the same path, a parent directory or something inside the removal target. Shared targets cannot be selected; their folder button remains available. Lutris Wine prefixes are included even when game directories differ. Similar names alone are not evidence of sharing. Unknown or unreadable installations are outside this check; no listed user is not proof of exclusive ownership. Flatpak/Snap purge actions are blocked when they could bypass shared-data protection.
+
+An in-memory review snapshot is compared before process termination, after shutdown and optional backup, and directly before deleting each target. Application inventory, package versions and native removal simulations are also rechecked before package actions. Changes stop execution and require a fresh analysis and confirmation, including saves written during shutdown. **Analyze again** never retries deletion automatically. Completed actions are not automatically rolled back; any backup already created is retained.
+
+File checks use directory/file identity, sizes, timestamps and link targets, not file contents. Links inside targets are not followed. Unreadable data, special files, mount points including bind mounts, or scan limits (at most 250,000 entries and 30 seconds per path check) prevent approval. Very large targets may require manual inspection outside Restlos. These checks are not continuous monitoring or a guarantee against every concurrent or malicious change. Authentication and execution in an external package manager are not atomic with Restlos' previous check.
 
 ## Requirements
 
@@ -48,10 +58,10 @@ Download the latest package from [GitHub Releases](https://github.com/jurkast/re
 Install the native Debian package through the graphical software manager or with APT. APT resolves the required GTK and Python dependencies automatically:
 
 ```bash
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.7.0/restlos-uninstaller_1.7.0-1_all.deb
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.7.0/restlos-uninstaller_1.7.0-1_all.deb.sha256
-sha256sum --check restlos-uninstaller_1.7.0-1_all.deb.sha256
-sudo apt install ./restlos-uninstaller_1.7.0-1_all.deb
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.8.0/restlos-uninstaller_1.8.0-1_all.deb
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.8.0/restlos-uninstaller_1.8.0-1_all.deb.sha256
+sha256sum --check restlos-uninstaller_1.8.0-1_all.deb.sha256
+sudo apt install ./restlos-uninstaller_1.8.0-1_all.deb
 ```
 
 The application-menu entry explicitly starts the system package. If an older per-user installation still exists at `~/.local/bin/restlos`, use `/usr/bin/restlos` to address the package version unambiguously.
@@ -61,11 +71,11 @@ The application-menu entry explicitly starts the system package. If an older per
 For Fedora, Arch Linux, openSUSE, or a per-user installation:
 
 ```bash
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.7.0/Restlos-1.7.0.tar.gz
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.7.0/Restlos-1.7.0.sha256
-sha256sum --check Restlos-1.7.0.sha256
-tar -xzf Restlos-1.7.0.tar.gz
-cd Restlos-1.7.0
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.8.0/Restlos-1.8.0.tar.gz
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.8.0/Restlos-1.8.0.sha256
+sha256sum --check Restlos-1.8.0.sha256
+tar -xzf Restlos-1.8.0.tar.gz
+cd Restlos-1.8.0
 ./install.sh
 ```
 

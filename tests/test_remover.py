@@ -5,13 +5,19 @@ import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from restlos.models import AppRecord, Confidence, RemovalAction, RemovalPlan, RemovalTarget, SourceKind
 from restlos.remover import RemovalExecutor
+from restlos.safety import seal_plan
 
 
 class RemoverTests(unittest.TestCase):
     def setUp(self) -> None:
+        for name in ("restlos.scanners.ApplicationScanner.scan", "restlos.remover.RemovalExecutor.related_processes"):
+            mocked = patch(name, return_value=[])
+            mocked.start()
+            self.addCleanup(mocked.stop)
         self.temporary = tempfile.TemporaryDirectory()
         self.home = Path(self.temporary.name)
         (self.home / ".config").mkdir()
@@ -43,6 +49,7 @@ class RemoverTests(unittest.TestCase):
                 RemovalTarget(cache, "Cache", 4, Confidence.HIGH),
             ],
         )
+        seal_plan(plan, [], home=self.home)
         result = RemovalExecutor(self.home).execute(plan, permanent=True)
         self.assertTrue(result.success, result.errors)
         self.assertFalse(config.exists())
@@ -58,6 +65,7 @@ class RemoverTests(unittest.TestCase):
                 RemovalTarget(config, "möglicher Treffer", 0, Confidence.POSSIBLE, selected=False),
             ],
         )
+        seal_plan(plan, [], home=self.home)
         result = RemovalExecutor(self.home).execute(plan, permanent=True)
         self.assertTrue(result.success)
         self.assertTrue(config.exists())
@@ -72,6 +80,7 @@ class RemoverTests(unittest.TestCase):
             app=self._app(),
             targets=[RemovalTarget(link, "Starter", 0, Confidence.CERTAIN)],
         )
+        seal_plan(plan, [], home=self.home)
         result = RemovalExecutor(self.home).execute(plan, permanent=True)
         self.assertTrue(result.success, result.errors)
         self.assertFalse(link.exists())
@@ -105,6 +114,7 @@ class RemoverTests(unittest.TestCase):
                 )
             ],
         )
+        seal_plan(plan, [], home=self.home)
         result = RemovalExecutor(self.home).execute(plan, permanent=True)
         self.assertTrue(result.success, result.errors)
         with sqlite3.connect(database) as connection:
@@ -131,6 +141,7 @@ class RemoverTests(unittest.TestCase):
                 )
             ],
         )
+        seal_plan(plan, [], home=self.home)
         result = RemovalExecutor(self.home).execute(plan, permanent=True)
         self.assertTrue(result.success, result.errors)
         self.assertEqual(json.loads(installed.read_text(encoding="utf-8")), {"keep-me": {}})

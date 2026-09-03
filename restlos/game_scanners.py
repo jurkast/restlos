@@ -45,6 +45,28 @@ def _first_image(paths: Iterable[Path], fallback: str) -> str:
     return fallback
 
 
+def _literal_yaml_path(text: str, key: str) -> str:
+    """Read only simple path scalars; never evaluate YAML tags or shell text."""
+    match = re.search(r"^\s*" + re.escape(key) + r":\s*(.+)$", text, re.MULTILINE)
+    if match is None:
+        return ""
+    value = match[1].strip()
+    if value.startswith("'") and value.endswith("'"):
+        value = value[1:-1].replace("''", "'")
+    elif value.startswith('"'):
+        try:
+            value = json.loads(value)
+        except ValueError:
+            return ""
+    else:
+        value = value.split(" #", 1)[0].strip()
+    if not isinstance(value, str) or "\0" in value:
+        return ""
+    value = os.path.expanduser(os.path.expandvars(value))
+    path = Path(value)
+    return str(path) if path.is_absolute() and ".." not in path.parts else ""
+
+
 class GamePlatformScanner:
     """Read launcher libraries directly, without starting any launcher."""
 
@@ -192,11 +214,17 @@ class GamePlatformScanner:
                     ):
                         owned_entries.append((desktop_root / filename, "Lutris-Starter"))
 
+                prefix = ""
+                executable = ""
                 if config_file.is_file():
                     try:
                         config_text = config_file.read_text(encoding="utf-8", errors="ignore")
                     except OSError:
                         config_text = ""
+                    prefix = _literal_yaml_path(config_text, "prefix")
+                    executable = _literal_yaml_path(config_text, "exe")
+                    if prefix and (Path(prefix) / "drive_c").is_dir() and (Path(prefix) / "system.reg").is_file():
+                        owned_entries.append((Path(prefix), "Lutris-Wine-Präfix laut Spielkonfiguration"))
                     game_aliases = {normalize_key(name), normalize_key(slug)}
                     for referenced in extract_home_paths(config_text, self.home):
                         if referenced.is_file() and referenced.parent == self.home / "Downloads":
@@ -236,6 +264,8 @@ class GamePlatformScanner:
                                 install_root=str(directory) if directory.is_absolute() else "",
                                 manager_id=game_id,
                                 slug=slug,
+                                wine_prefix=prefix,
+                                executable=executable,
                             ),
                         },
                     )

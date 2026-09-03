@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from restlos.game_scanners import GamePlatformScanner
+from restlos.game_scanners import GamePlatformScanner, _literal_yaml_path
 from restlos.models import SourceKind
 
 
@@ -45,7 +45,14 @@ class GamePlatformScannerTests(unittest.TestCase):
         self.assertEqual(app.name, "Test Quest")
         self.assertIn(str(game), owned)
         self.assertIn(str(config), owned)
+        self.assertEqual(app.metadata["wine_prefix"], str(game))
         self.assertEqual(actions[0]["kind"], "lutris-database")
+
+    def test_lutris_literal_paths_support_spaces_without_executing_yaml(self) -> None:
+        for value in ("'/games/My Game'", '"/games/My Game"', "/games/My Game # comment"):
+            self.assertEqual(_literal_yaml_path(f"game:\n  prefix: {value}\n", "prefix"), "/games/My Game")
+        for value in ("relative/path", "!!python/object:danger {}", "../games", "/games/../private", '"bad'):
+            self.assertEqual(_literal_yaml_path(f"prefix: {value}\n", "prefix"), "")
 
     def test_steam_game_is_detected_but_runtime_is_filtered(self) -> None:
         steam = self.home / ".steam/debian-installation"

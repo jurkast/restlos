@@ -1,6 +1,6 @@
 name: restlos-uninstaller
 base: core24
-version: "1.7.0"
+version: "1.8.0"
 summary: Safe Linux App & Game Uninstaller
 description: |
   Restlos Uninstaller detects applications and games from native package

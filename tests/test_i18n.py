@@ -47,7 +47,7 @@ class I18nTests(unittest.TestCase):
     def test_every_explicit_gui_and_cli_message_has_an_english_translation(self) -> None:
         project = Path(__file__).resolve().parents[1]
         missing: list[str] = []
-        for relative in ("restlos/gui.py", "restlos/cli.py", "restlos/locations.py"):
+        for relative in ("restlos/gui.py", "restlos/cli.py", "restlos/locations.py", "restlos/sharing.py", "restlos/safety.py", "restlos/analyzer.py", "restlos/remover.py"):
             tree = ast.parse((project / relative).read_text(encoding="utf-8"))
             for node in ast.walk(tree):
                 if (

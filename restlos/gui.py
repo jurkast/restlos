@@ -100,7 +100,8 @@ class TargetRow(Gtk.ListBoxRow):
         self.add_css_class("target-row")
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         check = Gtk.CheckButton()
-        check.set_active(target.selected)
+        check.set_active(target.selected and not target.shared_with)
+        check.set_sensitive(not target.shared_with)
         check.set_valign(Gtk.Align.CENTER)
         check.connect("toggled", self._on_toggled, changed_callback)
         box.append(check)
@@ -116,13 +117,29 @@ class TargetRow(Gtk.ListBoxRow):
         reason.set_wrap(True)
         reason.add_css_class("muted")
         labels.append(reason)
+        if target.shared_with:
+            shared = Gtk.Expander(label=_("Geschützt – wer braucht diese Daten noch?"))
+            references = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+            for use in target.shared_with:
+                note = Gtk.Label(
+                    label=_("{name} ({source})\n{evidence}: {path}", name=use.app_name,
+                            source=display_text(use.source), evidence=display_text(use.evidence), path=use.reference_path),
+                    xalign=0,
+                )
+                note.set_wrap(True)
+                note.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+                note.set_max_width_chars(45)
+                note.set_selectable(True)
+                references.append(note)
+            shared.set_child(references)
+            labels.append(shared)
         box.append(labels)
 
         side = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
         side.set_valign(Gtk.Align.CENTER)
         size = Gtk.Label(label=format_size(target.size), xalign=1)
         side.append(size)
-        confidence = Gtk.Label(label=display_text(target.confidence.value), xalign=1)
+        confidence = Gtk.Label(label=_("Geschützt") if target.shared_with else display_text(target.confidence.value), xalign=1)
         confidence.add_css_class(
             {
                 Confidence.CERTAIN: "confidence-certain",
@@ -140,7 +157,9 @@ class TargetRow(Gtk.ListBoxRow):
         self.set_child(box)
 
     def _on_toggled(self, check: Gtk.CheckButton, callback) -> None:
-        self.target.selected = check.get_active()
+        self.target.selected = check.get_active() and not self.target.shared_with
+        if self.target.shared_with and check.get_active():
+            check.set_active(False)
         callback()
 
 
@@ -576,6 +595,8 @@ class MainWindow(Gtk.ApplicationWindow):
         if self.current_app is None or plan.app.key != self.current_app.key:
             return False
         self.current_plan = plan
+        self.current_app = plan.app
+        self._show_app_header(plan.app)
         _clear_box(self.action_card)
         _clear_box(self.target_list)
         _clear_box(self.warning_box)
@@ -605,11 +626,12 @@ class MainWindow(Gtk.ApplicationWindow):
             label.add_css_class("muted")
             self.target_list.append(label)
 
-        for warning in plan.warnings:
+        warnings = [*plan.warnings, *([plan.safety_error] if plan.safety_error else [])]
+        for warning in warnings:
             line = Gtk.Label(label=f"⚠ {display_text(warning)}", xalign=0)
             line.set_wrap(True)
             self.warning_box.append(line)
-        self.warning_box.set_visible(bool(plan.warnings))
+        self.warning_box.set_visible(bool(warnings))
         self._update_plan_summary()
         return False
 
@@ -726,6 +748,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def _update_plan_summary(self) -> None:
         if self.current_plan is None:
+            self.remove_button.set_sensitive(False)
             return
         count = len(self.current_plan.selected_targets)
         action_count = len(self.current_plan.actions)
@@ -737,14 +760,17 @@ class MainWindow(Gtk.ApplicationWindow):
                 size=format_size(self.current_plan.total_size),
             )
         )
-        self.remove_button.set_sensitive(bool(action_count or count) and not self.busy)
+        self.remove_button.set_sensitive(
+            bool(action_count or count) and not self.busy
+            and self.current_plan.snapshot is not None and not self.current_plan.safety_error
+        )
 
     def _permanent_mode_changed(self, check: Gtk.CheckButton) -> None:
         self.backup_check.set_sensitive(check.get_active())
 
     def _confirm_removal(self, _button: Gtk.Button) -> None:
         plan = self.current_plan
-        if plan is None or self.busy:
+        if plan is None or self.busy or plan.safety_error or plan.snapshot is None:
             return
         permanent = self.permanent_check.get_active()
         create_backup = permanent and self.backup_check.get_active()
@@ -894,7 +920,7 @@ class MainWindow(Gtk.ApplicationWindow):
             details = "\n\n".join(detail_parts)
             message_type = Gtk.MessageType.WARNING if result.residual_paths else Gtk.MessageType.INFO
         else:
-            title = _("Entfernung nicht vollständig")
+            title = _("Neue Analyse erforderlich") if result.review_required else _("Entfernung nicht vollständig")
             detail_parts = [
                 "\n".join(display_text(error) for error in result.errors[:8])
                 or _("Ein unbekannter Fehler ist aufgetreten.")
@@ -924,6 +950,11 @@ class MainWindow(Gtk.ApplicationWindow):
             secondary_text=details,
         )
         dialog.add_button(_("Schließen"), Gtk.ResponseType.CLOSE)
+        if result.review_required:
+            self.current_plan = None
+            self.remove_button.set_sensitive(False)
+            self.plan_summary.set_text(_("Löschplan ungültig – bitte erneut analysieren"))
+            dialog.add_button(_("Erneut analysieren"), Gtk.ResponseType.APPLY)
         if result.recovery_items or result.backup_items:
             dialog.add_button(_("Wiederherstellungszentrum"), Gtk.ResponseType.HELP)
         dialog.connect("response", self._after_result_dialog, result)
@@ -940,6 +971,8 @@ class MainWindow(Gtk.ApplicationWindow):
         else:
             self.detail_stack.set_visible_child_name("detail")
             self._update_plan_summary()
+            if result.review_required and response == Gtk.ResponseType.APPLY:
+                self._analyze_current()
         if response == Gtk.ResponseType.HELP:
             self.show_recovery_center()
 

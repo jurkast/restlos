@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from restlos.locations import AppLocation, LocationResult
-from restlos.models import AppRecord, Confidence, RemovalPlan, RemovalTarget, SourceKind
+from restlos.models import AppRecord, Confidence, RemovalPlan, RemovalResult, RemovalTarget, SharedUse, SourceKind
 
 try:
     from restlos.gui import Gio, Gtk, MainWindow, RestlosApplication, TargetRow
@@ -51,6 +51,40 @@ class LocationGuiTests(unittest.TestCase):
         opened.assert_called_once_with(self.root)
         changed.assert_not_called()
         self.assertFalse(target.selected)
+
+    def test_shared_row_locks_checkbox_but_keeps_folder_button(self) -> None:
+        target = RemovalTarget(self.root, "Data", 0, Confidence.HIGH, False,
+                               [SharedUse("beta", "Beta", "Lutris", str(self.root), "Wine prefix")])
+        changed, opened = Mock(), Mock()
+        row = TargetRow(target, changed, opened)
+        checkbox = row.get_child().get_first_child()
+        self.assertFalse(checkbox.get_sensitive())
+        checkbox.set_active(True)
+        self.assertFalse(target.selected)
+        row.get_child().get_last_child().emit("clicked")
+        opened.assert_called_once_with(self.root)
+
+    def test_unreviewed_plan_cannot_enable_removal(self) -> None:
+        app = AppRecord("portable:test", "Test", SourceKind.PORTABLE, "test")
+        self.window.current_plan = RemovalPlan(app, [RemovalTarget(self.root, "Data", 0, Confidence.HIGH)])
+        self.window._update_plan_summary()
+        self.assertFalse(self.window.remove_button.get_sensitive())
+
+    @patch("restlos.gui.Gtk.MessageDialog")
+    def test_invalidated_plan_requires_reanalysis_not_automatic_retry(self, message) -> None:
+        app = AppRecord("portable:test", "Test", SourceKind.PORTABLE, "test")
+        plan = RemovalPlan(app)
+        self.window.current_app = app
+        self.window.current_plan = plan
+        result = RemovalResult(False, review_required=True)
+        self.window._removal_finished(plan, result)
+        self.assertIsNone(self.window.current_plan)
+        self.assertFalse(self.window.remove_button.get_sensitive())
+        with patch.object(self.window, "_analyze_current") as analyze, \
+             patch.object(self.window, "_start_removal") as remove:
+            self.window._after_result_dialog(message.return_value, Gtk.ResponseType.APPLY, result)
+            analyze.assert_called_once()
+            remove.assert_not_called()
 
     @patch("restlos.gui.Gio.AppInfo.get_default_for_type")
     def test_desktop_file_is_passed_to_directory_handler_as_parent(self, get_manager) -> None:

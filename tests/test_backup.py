@@ -6,11 +6,13 @@ import tarfile
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from restlos.backup import BackupError, BackupManager
 from restlos.models import AppRecord, BackupItem, Confidence, RemovalAction, RemovalPlan, RemovalTarget, SourceKind
 from restlos.recovery import RecoveryManager
 from restlos.remover import RemovalExecutor
+from restlos.safety import seal_plan
 
 
 class FailingBackup:
@@ -41,6 +43,10 @@ class RecordingExecutor(RemovalExecutor):
 
 class BackupTests(unittest.TestCase):
     def setUp(self) -> None:
+        for name in ("restlos.scanners.ApplicationScanner.scan", "restlos.remover.RemovalExecutor.related_processes"):
+            mocked = patch(name, return_value=[])
+            mocked.start()
+            self.addCleanup(mocked.stop)
         self.temporary = tempfile.TemporaryDirectory()
         self.home = Path(self.temporary.name)
         for path in (".config", ".cache", ".local/share", ".local/state"):
@@ -119,6 +125,7 @@ class BackupTests(unittest.TestCase):
             targets=[RemovalTarget(config, "Einstellungen", 0, Confidence.CERTAIN)],
             actions=[RemovalAction("Marker anlegen", ("/usr/bin/touch", str(self.home / "action-ran")))],
         )
+        seal_plan(plan, [], home=self.home)
         result = RemovalExecutor(self.home, backup=FailingBackup()).execute(
             plan,
             permanent=True,
@@ -131,8 +138,10 @@ class BackupTests(unittest.TestCase):
 
     def test_related_processes_stop_before_backup_snapshot(self) -> None:
         events: list[str] = []
+        plan = RemovalPlan(app=self.app)
+        seal_plan(plan, [], home=self.home)
         result = RecordingExecutor(self.home, events).execute(
-            RemovalPlan(app=self.app),
+            plan,
             permanent=True,
             create_backup=True,
         )
@@ -177,6 +186,7 @@ class BackupTests(unittest.TestCase):
             app=self.app,
             targets=[RemovalTarget(config, "Einstellungen", 4, Confidence.CERTAIN)],
         )
+        seal_plan(plan, [], home=self.home)
         removed = RemovalExecutor(self.home).execute(plan, permanent=True, create_backup=True)
         self.assertTrue(removed.success, removed.errors)
         self.assertFalse(config.exists())

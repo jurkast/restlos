@@ -3,7 +3,10 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .safety import PlanSnapshot
 
 
 class SourceKind(str, Enum):
@@ -50,12 +53,25 @@ class AppRecord:
 
 
 @dataclass(slots=True)
+class SharedUse:
+    app_key: str
+    app_name: str
+    source: str
+    reference_path: str
+    evidence: str
+
+    def to_dict(self) -> dict[str, str]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
 class RemovalTarget:
     path: Path
     reason: str
     size: int
     confidence: Confidence
     selected: bool = True
+    shared_with: list[SharedUse] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -64,6 +80,7 @@ class RemovalTarget:
             "size": self.size,
             "confidence": self.confidence.value,
             "selected": self.selected,
+            "shared_with": [use.to_dict() for use in self.shared_with],
         }
 
 
@@ -93,10 +110,13 @@ class RemovalPlan:
     targets: list[RemovalTarget] = field(default_factory=list)
     actions: list[RemovalAction] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    safety_error: str = ""
+    package_preview: tuple[str, ...] = ()
+    snapshot: PlanSnapshot | None = field(default=None, repr=False)
 
     @property
     def selected_targets(self) -> list[RemovalTarget]:
-        return [target for target in self.targets if target.selected]
+        return [target for target in self.targets if target.selected and not target.shared_with]
 
     @property
     def total_size(self) -> int:
@@ -109,6 +129,9 @@ class RemovalPlan:
             "actions": [action.to_dict() for action in self.actions],
             "warnings": list(self.warnings),
             "total_size": self.total_size,
+            "safety_error": self.safety_error,
+            "review_checked": self.snapshot is not None and not self.safety_error,
+            "package_preview": list(self.package_preview),
         }
 
 
@@ -148,6 +171,7 @@ class RemovalResult:
     verification_error: str = ""
     recovery_id: str = ""
     receipt_path: str = ""
+    review_required: bool = False
 
 
 @dataclass(slots=True)
