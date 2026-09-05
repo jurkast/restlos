@@ -1,0 +1,47 @@
+#!/usr/bin/make -f
+
+export PYBUILD_DISABLE = 1
+
+APP_ID := io.github.jurkast.Restlos
+APP_VERSION := $(shell sed -n 's/^__version__ = "\([^"]*\)"/\1/p' restlos/__init__.py)
+RELEASE_DATE := $(shell date --utc --date="$$(dpkg-parsechangelog --show-field Date)" +%F)
+PACKAGE_ROOT := $(CURDIR)/debian/restlos-uninstaller
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	test -n "$(APP_VERSION)"
+	test "$(APP_VERSION)" = "$$(dpkg-parsechangelog --show-field Version | sed 's/-.*//')"
+	mkdir -p debian/build
+	sed -e 's|@EXEC@|/usr/bin/restlos|g' \
+	    -e 's|@ICON@|$(APP_ID)|g' \
+	    assets/$(APP_ID).desktop.in > debian/build/$(APP_ID).desktop
+	sed -e 's|@VERSION@|$(APP_VERSION)|g' \
+	    -e 's|@DATE@|$(RELEASE_DATE)|g' \
+	    assets/$(APP_ID).metainfo.xml.in > debian/build/$(APP_ID).metainfo.xml
+
+override_dh_auto_install:
+	install -d -m 0755 \
+	    $(PACKAGE_ROOT)/usr/bin \
+	    $(PACKAGE_ROOT)/usr/lib/restlos \
+	    $(PACKAGE_ROOT)/usr/share/applications \
+	    $(PACKAGE_ROOT)/usr/share/icons/hicolor/scalable/apps \
+	    $(PACKAGE_ROOT)/usr/share/metainfo
+	cp -a restlos $(PACKAGE_ROOT)/usr/lib/restlos/restlos
+	find $(PACKAGE_ROOT)/usr/lib/restlos/restlos -type d -name __pycache__ -prune -exec rm -r -- {} +
+	find $(PACKAGE_ROOT)/usr/lib/restlos/restlos -type f -name '*.pyc' -delete
+	install -m 0755 run_restlos.py $(PACKAGE_ROOT)/usr/lib/restlos/run_restlos.py
+	install -m 0755 packaging/debian/restlos-wrapper $(PACKAGE_ROOT)/usr/bin/restlos
+	install -m 0644 assets/$(APP_ID).svg \
+	    $(PACKAGE_ROOT)/usr/share/icons/hicolor/scalable/apps/$(APP_ID).svg
+	install -m 0644 debian/build/$(APP_ID).desktop \
+	    $(PACKAGE_ROOT)/usr/share/applications/$(APP_ID).desktop
+	install -m 0644 debian/build/$(APP_ID).metainfo.xml \
+	    $(PACKAGE_ROOT)/usr/share/metainfo/$(APP_ID).metainfo.xml
+
+override_dh_installchangelogs:
+	dh_installchangelogs CHANGELOG.md
+
+override_dh_auto_clean:
+	rm -rf -- debian/build

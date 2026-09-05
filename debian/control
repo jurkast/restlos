@@ -1,0 +1,29 @@
+Source: restlos-uninstaller
+Section: utils
+Priority: optional
+Maintainer: jurkast <312310339+jurkast@users.noreply.github.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+Rules-Requires-Root: no
+Homepage: https://github.com/jurkast/restlos
+Vcs-Browser: https://github.com/jurkast/restlos
+Vcs-Git: https://github.com/jurkast/restlos.git
+
+Package: restlos-uninstaller
+Architecture: all
+Depends:
+ gir1.2-gtk-4.0,
+ hicolor-icon-theme,
+ policykit-1,
+ python3 (>= 3.10),
+ python3-gi,
+ ${misc:Depends}
+Recommends: desktop-file-utils
+Provides: restlos
+Description: safe Linux application and game uninstaller
+ Restlos Uninstaller detects applications and games from native package
+ managers, Flatpak, Snap, AppImage, Wine, Steam, Lutris, Heroic, Bottles,
+ PlayOnLinux and portable folders.
+ .
+ It presents a reviewable removal plan and can create Safety Backups before
+ permanently deleting suitable settings and save data.

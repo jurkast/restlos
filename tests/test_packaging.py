@@ -37,6 +37,22 @@ class PackagingTests(unittest.TestCase):
         self.assertIn("RESTLOS_UPDATE_CHANNEL=deb", wrapper)
         self.assertIn("/usr/lib/restlos/run_restlos.py", wrapper)
 
+    def test_launchpad_source_packaging_matches_application(self) -> None:
+        control = (PROJECT_ROOT / "debian/control").read_text(encoding="utf-8")
+        changelog = (PROJECT_ROOT / "debian/changelog").read_text(encoding="utf-8")
+        rules = (PROJECT_ROOT / "debian/rules").read_text(encoding="utf-8")
+        source_format = (PROJECT_ROOT / "debian/source/format").read_text(encoding="utf-8")
+
+        self.assertIn("Source: restlos-uninstaller", control)
+        self.assertIn("Package: restlos-uninstaller", control)
+        self.assertIn("Build-Depends: debhelper-compat (= 13)", control)
+        self.assertRegex(changelog.splitlines()[0], rf"\({re.escape(__version__)}-[^)]+\)")
+        self.assertIn("RESTLOS_UPDATE_CHANNEL=deb", (
+            PROJECT_ROOT / "packaging/debian/restlos-wrapper"
+        ).read_text(encoding="utf-8"))
+        self.assertIn("/usr/share/metainfo", rules)
+        self.assertEqual(source_format.strip(), "3.0 (quilt)")
+
     def test_snap_manifest_version_matches_project(self) -> None:
         manifest = (PROJECT_ROOT / "snap/snapcraft.yaml").read_text(encoding="utf-8")
         match = re.search(r'^version: "([^"]+)"$', manifest, re.MULTILINE)

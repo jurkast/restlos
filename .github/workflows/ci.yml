@@ -28,12 +28,12 @@ jobs:
       - name: Systemabhängigkeiten installieren
         run: |
           sudo apt-get update
-          sudo apt-get install --yes appstream desktop-file-utils gir1.2-gtk-4.0 python3-gi dbus-x11 xvfb
+          sudo apt-get install --yes appstream debhelper desktop-file-utils gir1.2-gtk-4.0 python3-gi dbus-x11 xvfb
 
       - name: Python- und Shell-Dateien prüfen
         run: |
           python3 -m compileall -q restlos tests
-          bash -n install.sh update.sh uninstall.sh scripts/build-deb.sh scripts/build-release.sh
+          bash -n install.sh update.sh uninstall.sh scripts/build-deb.sh scripts/build-release.sh scripts/build-source-package.sh
 
       - name: Regressionstests ausführen
         run: dbus-run-session -- xvfb-run -a python3 -m unittest discover -s tests -v
@@ -65,6 +65,14 @@ jobs:
           (cd dist && sha256sum --check "$(basename "$package").sha256")
           dpkg-deb --info "$package"
           dpkg-deb --contents "$package"
+
+      - name: Debian-Quellpaket für Launchpad prüfen
+        run: |
+          dpkg-buildpackage --build=binary --no-sign
+          ./scripts/build-source-package.sh noble dist/source --unsigned
+          source_package="$(find dist/source -maxdepth 1 -type f -name '*.dsc' -print -quit)"
+          test -n "$source_package"
+          dpkg-source --extract "$source_package" "$(mktemp -d -t restlos-source-check.XXXXXXXX)"
 
   native-adapters:
     name: ${{ matrix.name }}-Adapter

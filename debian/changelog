@@ -1,0 +1,6 @@
+restlos-uninstaller (1.9.0-1ppa1) UNRELEASED; urgency=medium
+
+  * Add native Debian source packaging for Ubuntu and Zorin OS.
+  * Install the GTK application, desktop entry, icon and AppStream metadata.
+
+ -- jurkast <312310339+jurkast@users.noreply.github.com>  Sat, 05 Sep 2026 16:42:34 +0200

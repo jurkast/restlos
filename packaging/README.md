@@ -30,6 +30,28 @@ sudo apt install ./dist/restlos-uninstaller_*_all.deb
 sudo apt remove restlos-uninstaller
 ```
 
+### Launchpad PPA source packages
+
+Launchpad builds binary packages from signed Debian source packages. Create an
+unsigned package for local validation from the repository root:
+
+```bash
+./scripts/build-source-package.sh noble dist/source/noble --unsigned
+```
+
+The supported Ubuntu series are `noble` (Ubuntu 24.04 and Zorin OS 18) and
+`jammy` (Ubuntu 22.04 and Zorin OS 17). For an upload, register the signing key
+in Launchpad and build with either `--sign` for the default key or
+`--key=FINGERPRINT` for an explicit key:
+
+```bash
+./scripts/build-source-package.sh noble dist/source/noble --key=FINGERPRINT
+dput ppa:jurkast/restlos dist/source/noble/*_source.changes
+```
+
+Increase `RESTLOS_PPA_REVISION` before rebuilding an already uploaded
+application version. Never overwrite or reuse an accepted PPA version.
+
 ## Snap Store preparation
 
 `snap/snapcraft.yaml` is a development manifest for a future official Snap.
