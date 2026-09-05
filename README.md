@@ -38,6 +38,7 @@
 - schreibt ein lokales Ergebnis- und Wiederherstellungsprotokoll nach `~/.local/state/restlos/history`
 - bietet zusätzlich eine Terminaloberfläche für Listen und Löschpläne
 - besitzt eine vollständige deutsche und englische Oberfläche mit Sprachwahl im Menü
+- verwendet ein gemeinsames, übersichtliches Restlos-Design mit Statuskacheln und klar getrennten Sicherheitsoptionen
 - sucht beim Start höchstens einmal täglich nach neuen Releases und bietet geprüfte Updates nach Bestätigung direkt an
 
 Restlos zeigt bewusst **Anwendungen, Spiele und eigenständige Programmumgebungen** und keine Tausenden Bibliotheks- oder Kernelpakete an.
@@ -62,10 +63,10 @@ Die aktuelle Ausgabe von der [Release-Seite](https://github.com/jurkast/restlos/
 Das native Debian-Paket wird über die grafische Softwareverwaltung oder vollständig im Terminal installiert. APT installiert dabei die benötigten GTK- und Python-Abhängigkeiten automatisch:
 
 ```bash
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.8.0/restlos-uninstaller_1.8.0-1_all.deb
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.8.0/restlos-uninstaller_1.8.0-1_all.deb.sha256
-sha256sum --check restlos-uninstaller_1.8.0-1_all.deb.sha256
-sudo apt install ./restlos-uninstaller_1.8.0-1_all.deb
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.9.0/restlos-uninstaller_1.9.0-1_all.deb
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.9.0/restlos-uninstaller_1.9.0-1_all.deb.sha256
+sha256sum --check restlos-uninstaller_1.9.0-1_all.deb.sha256
+sudo apt install ./restlos-uninstaller_1.9.0-1_all.deb
 ```
 
 Der Menüeintrag startet ausdrücklich die systemweite Paketversion. Falls daneben eine ältere Benutzerinstallation unter `~/.local/bin/restlos` liegt, lautet der eindeutige Terminalpfad `/usr/bin/restlos`.
@@ -75,11 +76,11 @@ Der Menüeintrag startet ausdrücklich die systemweite Paketversion. Falls daneb
 Für Fedora, Arch Linux, openSUSE oder eine benutzerbezogene Installation:
 
 ```bash
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.8.0/Restlos-1.8.0.tar.gz
-curl -LO https://github.com/jurkast/restlos/releases/download/v1.8.0/Restlos-1.8.0.sha256
-sha256sum --check Restlos-1.8.0.sha256
-tar -xzf Restlos-1.8.0.tar.gz
-cd Restlos-1.8.0
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.9.0/Restlos-1.9.0.tar.gz
+curl -LO https://github.com/jurkast/restlos/releases/download/v1.9.0/Restlos-1.9.0.sha256
+sha256sum --check Restlos-1.9.0.sha256
+tar -xzf Restlos-1.9.0.tar.gz
+cd Restlos-1.9.0
 ./install.sh
 ```
 
@@ -162,13 +163,13 @@ Unter **Menü → Automatisch nach Updates suchen** lässt sich die Startprüfun
 Der Installer ist weiterhin versionsbasiert und kann auch manuell ausgeführt werden. Eine neue lokale Ausgabe wird so installiert:
 
 ```bash
-./update.sh /pfad/zu/Restlos-1.8.0.tar.gz
+./update.sh /pfad/zu/Restlos-1.9.0.tar.gz
 ```
 
 Für ein über HTTPS geladenes Release ist eine bekannte SHA-256-Prüfsumme Pflicht:
 
 ```bash
-./update.sh 'https://github.com/jurkast/restlos/releases/download/v1.8.0/Restlos-1.8.0.tar.gz' '64-stellige-sha256-prüfsumme'
+./update.sh 'https://github.com/jurkast/restlos/releases/download/v1.9.0/Restlos-1.9.0.tar.gz' '64-stellige-sha256-prüfsumme'
 ```
 
 Updates werden zuerst in ein neues Versionsverzeichnis kopiert und geprüft. Erst danach wird der `current`-Symlink atomar umgeschaltet. Einstellungen und Entfernungshistorie bleiben erhalten.

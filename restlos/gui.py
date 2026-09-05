@@ -25,23 +25,108 @@ from .utils import format_size
 
 
 CSS = b"""
-window { background: @window_bg_color; }
-.sidebar { background: alpha(@view_bg_color, 0.82); border-right: 1px solid alpha(@borders, 0.55); }
-.app-list row { border-radius: 10px; margin: 2px 6px; }
-.app-list row:selected { background: alpha(@accent_bg_color, 0.18); color: @window_fg_color; }
-.app-name { font-weight: 650; }
+window.restlos-root { background: @window_bg_color; }
+window.restlos-root.restlos-light { color: #202128; background: #f7f7fa; }
+window.restlos-root.restlos-dark { color: #f4f2f7; background: #1d1c21; }
+.brand-mark {
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 10px;
+  background: @accent_bg_color;
+  color: @accent_fg_color;
+  font-size: 17px;
+  font-weight: 900;
+}
+.brand-name { font-size: 15px; font-weight: 800; }
+.header-tagline { color: alpha(@window_fg_color, 0.62); font-size: 0.86em; }
+.sidebar {
+  background: alpha(@view_bg_color, 0.76);
+  border-right: 1px solid alpha(@borders, 0.62);
+}
+.sidebar-heading, .eyebrow, .stat-heading {
+  color: alpha(@window_fg_color, 0.58);
+  font-size: 0.78em;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+}
+.scan-card {
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: alpha(@accent_bg_color, 0.10);
+}
+.app-list { background: transparent; }
+.app-list row { border-radius: 12px; margin: 3px 0; }
+.app-list row:hover { background: alpha(@window_fg_color, 0.055); }
+.app-list row:selected {
+  background: alpha(@accent_bg_color, 0.18);
+  color: @window_fg_color;
+}
+.app-name { font-weight: 750; }
+.app-source { color: alpha(@window_fg_color, 0.58); font-size: 0.88em; }
 .muted { color: alpha(@window_fg_color, 0.62); }
-.source-badge { border-radius: 999px; padding: 2px 8px; background: alpha(@accent_bg_color, 0.14); color: @accent_color; font-size: 0.86em; }
-.hero-title { font-size: 1.65em; font-weight: 750; }
-.section-title { font-size: 1.08em; font-weight: 700; }
-.card { background: @card_bg_color; border: 1px solid alpha(@borders, 0.55); border-radius: 12px; padding: 14px; }
-.warning-card { background: alpha(#f6d32d, 0.10); border: 1px solid alpha(#e5a50a, 0.45); border-radius: 10px; padding: 10px; }
-.target-row { border-bottom: 1px solid alpha(@borders, 0.35); padding: 7px 4px; }
+.source-badge {
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: alpha(@accent_bg_color, 0.14);
+  color: @accent_color;
+  font-size: 0.86em;
+  font-weight: 700;
+}
+.hero-card, .card, .safety-card, .stat-tile {
+  background: @card_bg_color;
+  border: 1px solid alpha(@borders, 0.62);
+}
+.hero-card { border-radius: 18px; padding: 18px; }
+.hero-title { font-size: 1.8em; font-weight: 800; }
+.section-title { font-size: 1.15em; font-weight: 800; }
+.card { border-radius: 16px; padding: 15px; }
+.stat-tile { border-radius: 14px; padding: 13px; }
+.stat-value { font-size: 1.15em; font-weight: 800; }
+.safety-card { border-radius: 16px; padding: 14px; }
+.action-bar {
+  padding-top: 12px;
+  border-top: 1px solid alpha(@borders, 0.45);
+}
+.warning-card {
+  background: alpha(#f6d32d, 0.12);
+  border: 1px solid alpha(#e5a50a, 0.48);
+  border-radius: 14px;
+  padding: 12px;
+}
+.target-row { border-bottom: 1px solid alpha(@borders, 0.35); padding: 9px 4px; }
 .confidence-certain { color: #2ec27e; }
 .confidence-high { color: #3584e4; }
 .confidence-possible { color: #e5a50a; }
 .danger-note { color: #c01c28; font-weight: 650; }
-.empty-title { font-size: 1.35em; font-weight: 700; }
+.empty-title { font-size: 1.5em; font-weight: 800; }
+.restlos-light .sidebar { background: #f0eff5; border-color: #d9d7e0; }
+.restlos-dark .sidebar { background: #242329; border-color: #3b3942; }
+.restlos-light .hero-card,
+.restlos-light .card,
+.restlos-light .safety-card,
+.restlos-light .stat-tile { background: #ffffff; border-color: #dedce5; }
+.restlos-dark .hero-card,
+.restlos-dark .card,
+.restlos-dark .safety-card,
+.restlos-dark .stat-tile { background: #29282e; border-color: #403e46; }
+.restlos-light .muted,
+.restlos-light .app-source,
+.restlos-light .header-tagline,
+.restlos-light .sidebar-heading,
+.restlos-light .eyebrow,
+.restlos-light .stat-heading { color: #68788e; }
+.restlos-dark .muted,
+.restlos-dark .app-source,
+.restlos-dark .header-tagline,
+.restlos-dark .sidebar-heading,
+.restlos-dark .eyebrow,
+.restlos-dark .stat-heading { color: #b9b6c1; }
+.restlos-light .scan-card { background: #e2f2fb; }
+.restlos-dark .scan-card { background: #253540; }
+.restlos-light .warning-card { color: #594000; background: #fff7e8; border-color: #e7c788; }
+.restlos-dark .warning-card { color: #f4d38a; background: #3a3020; border-color: #75603b; }
+.restlos-light .target-row:hover { color: #202128; background: #f3f2f6; }
+.restlos-dark .target-row:hover { color: #f4f2f7; background: #35333b; }
 """
 
 
@@ -86,7 +171,7 @@ class ApplicationRow(Gtk.ListBoxRow):
         labels.append(name)
         source = Gtk.Label(label=f"{display_text(record.source.value)} · {record.package_id}", xalign=0)
         source.set_ellipsize(Pango.EllipsizeMode.END)
-        source.add_css_class("muted")
+        source.add_css_class("app-source")
         labels.append(source)
         box.append(labels)
         self.set_child(box)
@@ -168,6 +253,12 @@ class MainWindow(Gtk.ApplicationWindow):
         super().__init__(application=application, title=APP_NAME)
         self.set_default_size(1120, 760)
         self.set_size_request(840, 560)
+        self.add_css_class("restlos-root")
+        self._gtk_settings = Gtk.Settings.get_default()
+        if self._gtk_settings is not None:
+            self._gtk_settings.connect("notify::gtk-theme-name", self._sync_theme)
+            self._gtk_settings.connect("notify::gtk-application-prefer-dark-theme", self._sync_theme)
+        self._sync_theme()
         self.apps: list[AppRecord] = []
         self.current_app: AppRecord | None = None
         self.current_plan: RemovalPlan | None = None
@@ -180,21 +271,40 @@ class MainWindow(Gtk.ApplicationWindow):
         self._build_content()
         self._load_applications()
 
+    def _sync_theme(self, *_args) -> None:
+        self.remove_css_class("restlos-light")
+        self.remove_css_class("restlos-dark")
+        theme_name = ""
+        prefer_dark = False
+        if self._gtk_settings is not None:
+            theme_name = str(self._gtk_settings.get_property("gtk-theme-name") or "")
+            prefer_dark = bool(self._gtk_settings.get_property("gtk-application-prefer-dark-theme"))
+        environment_theme = os.environ.get("GTK_THEME", "")
+        dark = prefer_dark or "dark" in theme_name.casefold() or "dark" in environment_theme.casefold()
+        self.add_css_class("restlos-dark" if dark else "restlos-light")
+
     def _build_header(self) -> None:
         header = Gtk.HeaderBar()
-        title = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        main = Gtk.Label(label=APP_NAME)
-        main.add_css_class("app-name")
-        sub = Gtk.Label(label=APP_TAGLINE)
-        sub.add_css_class("muted")
-        title.append(main)
-        title.append(sub)
-        header.set_title_widget(title)
+
+        brand = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        mark = Gtk.Label(label="R", xalign=0.5, yalign=0.5)
+        mark.add_css_class("brand-mark")
+        mark.set_valign(Gtk.Align.CENTER)
+        name = Gtk.Label(label=APP_NAME, xalign=0)
+        name.add_css_class("brand-name")
+        brand.append(mark)
+        brand.append(name)
+        header.pack_start(brand)
+
+        tagline = Gtk.Label(label=APP_TAGLINE)
+        tagline.add_css_class("header-tagline")
+        tagline.set_ellipsize(Pango.EllipsizeMode.END)
+        header.set_title_widget(tagline)
 
         self.refresh_button = Gtk.Button.new_from_icon_name("view-refresh-symbolic")
         self.refresh_button.set_tooltip_text(_("Programmliste neu einlesen"))
         self.refresh_button.connect("clicked", lambda _button: self._load_applications())
-        header.pack_start(self.refresh_button)
+        header.pack_end(self.refresh_button)
 
         menu = Gio.Menu()
         menu.append(_("Wiederherstellungszentrum …"), "app.recovery")
@@ -223,13 +333,17 @@ class MainWindow(Gtk.ApplicationWindow):
         paned.set_shrink_end_child(False)
         self.set_child(paned)
 
-        sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         sidebar.add_css_class("sidebar")
-        sidebar.set_size_request(310, -1)
-        sidebar.set_margin_top(10)
-        sidebar.set_margin_bottom(10)
-        sidebar.set_margin_start(8)
-        sidebar.set_margin_end(8)
+        sidebar.set_size_request(320, -1)
+        sidebar.set_margin_top(18)
+        sidebar.set_margin_bottom(16)
+        sidebar.set_margin_start(14)
+        sidebar.set_margin_end(14)
+
+        sidebar_heading = Gtk.Label(label=_("INSTALLIERTE APPS & SPIELE"), xalign=0)
+        sidebar_heading.add_css_class("sidebar-heading")
+        sidebar.append(sidebar_heading)
 
         self.search = Gtk.SearchEntry()
         # The property predates the setter method, which requires GTK 4.10.
@@ -257,6 +371,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.scan_status_label.add_css_class("muted")
         self.scan_status.append(self.scan_spinner)
         self.scan_status.append(self.scan_status_label)
+        self.scan_status.add_css_class("scan-card")
         sidebar.append(self.scan_status)
 
         scroll = Gtk.ScrolledWindow()
@@ -300,13 +415,25 @@ class MainWindow(Gtk.ApplicationWindow):
         return box
 
     def _detail_page(self) -> Gtk.Widget:
-        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
-        outer.set_margin_top(22)
+        page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        page_scroll = Gtk.ScrolledWindow()
+        page_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        page_scroll.set_vexpand(True)
+        page.append(page_scroll)
+
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        outer.set_margin_top(28)
         outer.set_margin_bottom(18)
-        outer.set_margin_start(24)
-        outer.set_margin_end(24)
+        outer.set_margin_start(28)
+        outer.set_margin_end(28)
+        page_scroll.set_child(outer)
+
+        eyebrow = Gtk.Label(label=_("AUSGEWÄHLTE ANWENDUNG"), xalign=0)
+        eyebrow.add_css_class("eyebrow")
+        outer.append(eyebrow)
 
         hero = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=15)
+        hero.add_css_class("hero-card")
         self.detail_icon_box = Gtk.Box()
         hero.append(self.detail_icon_box)
         labels = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
@@ -355,9 +482,13 @@ class MainWindow(Gtk.ApplicationWindow):
         section.append(self.plan_summary)
         outer.append(section)
 
-        scroll = Gtk.ScrolledWindow()
-        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scroll.set_vexpand(True)
+        stats = Gtk.Grid(column_spacing=12, row_spacing=12)
+        stats.set_column_homogeneous(True)
+        self.action_stat_value = self._summary_tile(stats, 0, _("PAKETAKTIONEN"))
+        self.path_stat_value = self._summary_tile(stats, 1, _("AUSGEWÄHLTE PFADE"))
+        self.size_stat_value = self._summary_tile(stats, 2, _("FREIGEGEBENER SPEICHER"))
+        outer.append(stats)
+
         plan_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.action_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         self.action_card.add_css_class("card")
@@ -366,10 +497,14 @@ class MainWindow(Gtk.ApplicationWindow):
         self.target_list.set_selection_mode(Gtk.SelectionMode.NONE)
         self.target_list.add_css_class("card")
         plan_box.append(self.target_list)
-        scroll.set_child(plan_box)
-        outer.append(scroll)
+        outer.append(plan_box)
 
-        options = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        safety_heading = Gtk.Label(label=_("SICHERHEIT & WIEDERHERSTELLUNG"), xalign=0)
+        safety_heading.add_css_class("eyebrow")
+        outer.append(safety_heading)
+
+        options = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        options.add_css_class("safety-card")
         self.permanent_check = Gtk.CheckButton(label=_("Benutzerdaten endgültig löschen (keine Papierkorb-Wiederherstellung)"))
         self.permanent_check.set_active(False)
         self.permanent_check.connect("toggled", self._permanent_mode_changed)
@@ -387,6 +522,10 @@ class MainWindow(Gtk.ApplicationWindow):
         outer.append(options)
 
         bottom = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        bottom.add_css_class("action-bar")
+        bottom.set_margin_start(28)
+        bottom.set_margin_end(28)
+        bottom.set_margin_bottom(14)
         self.delete_note = Gtk.Label(label=_("Vor dem Löschen erscheint eine letzte Zusammenfassung."), xalign=0)
         self.delete_note.set_hexpand(True)
         self.delete_note.add_css_class("muted")
@@ -395,8 +534,24 @@ class MainWindow(Gtk.ApplicationWindow):
         self.remove_button.add_css_class("destructive-action")
         self.remove_button.connect("clicked", self._confirm_removal)
         bottom.append(self.remove_button)
-        outer.append(bottom)
-        return outer
+        page.append(bottom)
+        return page
+
+    @staticmethod
+    def _summary_tile(grid: Gtk.Grid, column: int, heading: str) -> Gtk.Label:
+        tile = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        tile.add_css_class("stat-tile")
+        title = Gtk.Label(label=heading, xalign=0)
+        title.add_css_class("stat-heading")
+        title.set_wrap(True)
+        title.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+        title.set_max_width_chars(18)
+        tile.append(title)
+        value = Gtk.Label(label="—", xalign=0)
+        value.add_css_class("stat-value")
+        tile.append(value)
+        grid.attach(tile, column, 0, 1, 1)
+        return value
 
     def _progress_page(self) -> Gtk.Widget:
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
@@ -572,6 +727,9 @@ class MainWindow(Gtk.ApplicationWindow):
         _clear_box(self.action_card)
         self.warning_box.set_visible(False)
         self.plan_summary.set_text(_("Analyse läuft …"))
+        self.action_stat_value.set_text("—")
+        self.path_stat_value.set_text("—")
+        self.size_stat_value.set_text("—")
         app = self.current_app
 
         def worker() -> None:
@@ -752,14 +910,10 @@ class MainWindow(Gtk.ApplicationWindow):
             return
         count = len(self.current_plan.selected_targets)
         action_count = len(self.current_plan.actions)
-        self.plan_summary.set_text(
-            _(
-                "{actions} Paketaktion(en) · {paths} Pfad(e) · {size}",
-                actions=action_count,
-                paths=count,
-                size=format_size(self.current_plan.total_size),
-            )
-        )
+        self.plan_summary.set_text(_("Auswahl vor dem Entfernen prüfen"))
+        self.action_stat_value.set_text(str(action_count))
+        self.path_stat_value.set_text(str(count))
+        self.size_stat_value.set_text(format_size(self.current_plan.total_size))
         self.remove_button.set_sensitive(
             bool(action_count or count) and not self.busy
             and self.current_plan.snapshot is not None and not self.current_plan.safety_error

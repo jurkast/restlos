@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "1.8.0"
+__version__ = "1.9.0"
 APP_ID = "io.github.jurkast.Restlos"
 LEGACY_APP_IDS = ("io.github.jurkastl.Restlos", "io.github.local.Restlos")
 SELF_PACKAGE_IDS = ("restlos", "restlos-uninstaller")

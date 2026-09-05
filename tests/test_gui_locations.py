@@ -42,6 +42,10 @@ class LocationGuiTests(unittest.TestCase):
         self.assertEqual(application.get_flags(), Gio.ApplicationFlags(0))
         self.assertIsNotNone(application.lookup_action("check-updates"))
         self.assertTrue(self.window.search.get_property("placeholder-text"))
+        self.assertNotEqual(
+            self.window.has_css_class("restlos-light"),
+            self.window.has_css_class("restlos-dark"),
+        )
 
     def test_target_folder_button_leaves_selection_unchanged(self) -> None:
         target = RemovalTarget(self.root, "Data", 0, Confidence.HIGH, False)
@@ -69,6 +73,17 @@ class LocationGuiTests(unittest.TestCase):
         self.window.current_plan = RemovalPlan(app, [RemovalTarget(self.root, "Data", 0, Confidence.HIGH)])
         self.window._update_plan_summary()
         self.assertFalse(self.window.remove_button.get_sensitive())
+
+    def test_plan_summary_updates_visual_status_tiles(self) -> None:
+        app = AppRecord("portable:test", "Test", SourceKind.PORTABLE, "test")
+        self.window.current_plan = RemovalPlan(
+            app,
+            [RemovalTarget(self.root, "Data", 2048, Confidence.HIGH)],
+        )
+        self.window._update_plan_summary()
+        self.assertEqual(self.window.action_stat_value.get_text(), "0")
+        self.assertEqual(self.window.path_stat_value.get_text(), "1")
+        self.assertEqual(self.window.size_stat_value.get_text(), "2.0 KiB")
 
     @patch("restlos.gui.Gtk.MessageDialog")
     def test_invalidated_plan_requires_reanalysis_not_automatic_retry(self, message) -> None:

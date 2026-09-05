@@ -1,5 +1,15 @@
 # Änderungsprotokoll
 
+## 1.9.0 – 2026-09-05
+
+- vollständig überarbeitete GTK-4-Oberfläche im gemeinsamen Erscheinungsbild von Restlos Uninstaller und Restlos GameCheck
+- neue Markenleiste, klarere App-Seitenleiste sowie großzügige Karten für Anwendung, Löschplan und Sicherheitsoptionen
+- neue Statuskacheln für Paketaktionen, ausgewählte Dateipfade und den voraussichtlich freigegebenen Speicherplatz
+- durchgehend scrollbarerer Detailbereich, während die abschließende Entfernen-Schaltfläche erreichbar bleibt
+- verbesserte Abstände, Hervorhebungen und Kontraste, die sich weiterhin automatisch an das helle oder dunkle Systemdesign anpassen
+- vollständige deutsche und englische Beschriftung der neuen Oberflächenelemente ohne zusätzliche Laufzeitabhängigkeit
+- zusätzlicher Oberflächentest für die Statuskacheln; insgesamt 132 automatisierte Tests
+
 ## 1.8.0 – 2026-09-03
 
 - zeigt bei gemeinsam referenzierten Daten andere bekannte Anwendungen, Quelle und konkreten Referenzpfad; solche Ziele sind gesperrt, bleiben aber im Dateimanager zugänglich

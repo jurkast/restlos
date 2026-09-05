@@ -3,7 +3,7 @@
   "name": "Restlos Uninstaller",
   "tagline": "Safe Linux App & Game Uninstaller",
   "app_id": "io.github.jurkast.Restlos",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "languages": ["de", "en"],
   "safety_backup": true,
   "minimum_python": "3.10",
