@@ -79,6 +79,14 @@ fi
 git -C "$RESTLOS_PROJECT_ROOT" archive "$RESTLOS_UPSTREAM_REF" | tar -x -C "$RESTLOS_SOURCE_ROOT"
 rm -rf -- "$RESTLOS_SOURCE_ROOT/debian"
 cp -a -- "$RESTLOS_PROJECT_ROOT/debian" "$RESTLOS_SOURCE_ROOT/debian"
+rm -rf -- \
+    "$RESTLOS_SOURCE_ROOT/debian/.debhelper" \
+    "$RESTLOS_SOURCE_ROOT/debian/build" \
+    "$RESTLOS_SOURCE_ROOT/debian/restlos-uninstaller" \
+    "$RESTLOS_SOURCE_ROOT/debian/tmp"
+find "$RESTLOS_SOURCE_ROOT/debian" -maxdepth 1 -type f \
+    \( -name '*.debhelper.log' -o -name '*.substvars' -o -name 'debhelper-build-stamp' -o -name 'files' \) \
+    -delete
 
 sed -i \
     "1s|^restlos-uninstaller ([^)]*) [^;]*;|restlos-uninstaller (${RESTLOS_DEBIAN_VERSION}) ${RESTLOS_SERIES};|" \
