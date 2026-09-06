@@ -28,7 +28,7 @@ jobs:
       - name: Systemabhängigkeiten installieren
         run: |
           sudo apt-get update
-          sudo apt-get install --yes appstream debhelper desktop-file-utils gir1.2-gtk-4.0 python3-gi dbus-x11 xvfb
+          sudo apt-get install --yes appstream build-essential debhelper desktop-file-utils gir1.2-gtk-4.0 python3-gi dbus-x11 xvfb
 
       - name: Python- und Shell-Dateien prüfen
         run: |
