@@ -72,7 +72,8 @@ jobs:
           ./scripts/build-source-package.sh noble dist/source --unsigned
           source_package="$(find dist/source -maxdepth 1 -type f -name '*.dsc' -print -quit)"
           test -n "$source_package"
-          dpkg-source --extract "$source_package" "$(mktemp -d -t restlos-source-check.XXXXXXXX)"
+          extract_root="$(mktemp -d -t restlos-source-check.XXXXXXXX)"
+          dpkg-source --extract "$source_package" "$extract_root/source"
 
   native-adapters:
     name: ${{ matrix.name }}-Adapter
