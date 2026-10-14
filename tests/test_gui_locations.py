@@ -10,7 +10,7 @@ from restlos.locations import AppLocation, LocationResult
 from restlos.models import AppRecord, Confidence, RemovalPlan, RemovalResult, RemovalTarget, SharedUse, SourceKind
 
 try:
-    from restlos.gui import Gio, Gtk, MainWindow, RestlosApplication, TargetRow
+    from restlos.gui import Gio, Gtk, MainWindow, Pango, RestlosApplication, TargetRow
     GTK_AVAILABLE = Gtk.init_check()
 except (ImportError, ValueError):
     GTK_AVAILABLE = False
@@ -84,6 +84,14 @@ class LocationGuiTests(unittest.TestCase):
         self.assertEqual(self.window.action_stat_value.get_text(), "0")
         self.assertEqual(self.window.path_stat_value.get_text(), "1")
         self.assertEqual(self.window.size_stat_value.get_text(), "2.0 KiB")
+
+    def test_long_detail_and_safety_texts_are_constrained(self) -> None:
+        self.assertEqual(self.window.detail_name.get_ellipsize(), Pango.EllipsizeMode.END)
+        self.assertEqual(self.window.detail_id.get_ellipsize(), Pango.EllipsizeMode.END)
+        for check in (self.window.permanent_check, self.window.backup_check, self.window.process_check):
+            label = check.get_child()
+            self.assertIsInstance(label, Gtk.Label)
+            self.assertTrue(label.get_wrap())
 
     @patch("restlos.gui.Gtk.MessageDialog")
     def test_invalidated_plan_requires_reanalysis_not_automatic_retry(self, message) -> None:

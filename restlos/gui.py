@@ -194,6 +194,16 @@ def _icon_widget(icon: str, size: int = 40) -> Gtk.Image:
     return image
 
 
+def _wrapping_check_button(label: str) -> Gtk.CheckButton:
+    check = Gtk.CheckButton()
+    text = Gtk.Label(label=label, xalign=0)
+    text.set_hexpand(True)
+    text.set_wrap(True)
+    text.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+    check.set_child(text)
+    return check
+
+
 class ApplicationRow(Gtk.ListBoxRow):
     def __init__(self, record: AppRecord) -> None:
         super().__init__()
@@ -210,10 +220,12 @@ class ApplicationRow(Gtk.ListBoxRow):
         labels.set_hexpand(True)
         name = Gtk.Label(label=record.name, xalign=0)
         name.set_ellipsize(Pango.EllipsizeMode.END)
+        name.set_tooltip_text(record.name)
         name.add_css_class("app-name")
         labels.append(name)
         source = Gtk.Label(label=f"{display_text(record.source.value)} · {record.package_id}", xalign=0)
         source.set_ellipsize(Pango.EllipsizeMode.END)
+        source.set_tooltip_text(f"{display_text(record.source.value)} · {record.package_id}")
         source.add_css_class("app-source")
         labels.append(source)
         box.append(labels)
@@ -243,6 +255,7 @@ class TargetRow(Gtk.ListBoxRow):
         labels.append(path_label)
         reason = Gtk.Label(label=display_text(target.reason), xalign=0)
         reason.set_wrap(True)
+        reason.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
         reason.add_css_class("muted")
         labels.append(reason)
         if target.shared_with:
@@ -335,14 +348,12 @@ class MainWindow(Gtk.ApplicationWindow):
         name = Gtk.Label(label="RESTLOS  /  UNINSTALLER", xalign=0)
         name.add_css_class("brand-name")
         brand.append(name)
-        brand_tagline = Gtk.Label(label=APP_TAGLINE, xalign=0)
-        brand_tagline.add_css_class("header-tagline")
-        brand.append(brand_tagline)
         header.pack_start(brand)
 
-        tagline = Gtk.Label(label=_("Auswählen. Prüfen. Sicher entfernen."))
+        tagline = Gtk.Label(label=APP_TAGLINE)
         tagline.add_css_class("header-tagline")
         tagline.set_ellipsize(Pango.EllipsizeMode.END)
+        tagline.set_tooltip_text(APP_TAGLINE)
         header.set_title_widget(tagline)
 
         self.refresh_button = Gtk.Button.new_from_icon_name("view-refresh-symbolic")
@@ -395,7 +406,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.search.connect("search-changed", self._on_search_changed)
         sidebar.append(self.search)
 
-        filter_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        filter_bar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         sources = [_("Alle Quellen"), *(display_text(source.value) for source in SourceKind)]
         self.source_filter = Gtk.DropDown.new_from_strings(sources)
         self.source_filter.set_hexpand(True)
@@ -403,6 +414,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.source_filter.connect("notify::selected", lambda *_args: self.app_list.invalidate_filter())
         filter_bar.append(self.source_filter)
         folder_button = Gtk.Button(label=_("Ordner prüfen …"))
+        folder_button.set_hexpand(True)
         folder_button.set_tooltip_text(_("Einen nicht erkannten Programm- oder Spieleordner manuell analysieren"))
         folder_button.connect("clicked", self._choose_folder)
         filter_bar.append(folder_button)
@@ -412,6 +424,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.scan_spinner = Gtk.Spinner()
         self.scan_status_label = Gtk.Label(label=_("Programme werden eingelesen …"), xalign=0)
         self.scan_status_label.set_hexpand(True)
+        self.scan_status_label.set_ellipsize(Pango.EllipsizeMode.END)
         self.scan_status_label.add_css_class("muted")
         self.scan_status.append(self.scan_spinner)
         self.scan_status.append(self.scan_status_label)
@@ -454,6 +467,10 @@ class MainWindow(Gtk.ApplicationWindow):
         title.add_css_class("empty-title")
         box.append(title)
         note = Gtk.Label(label=_("Restlos erstellt zuerst einen überprüfbaren Löschplan."))
+        note.set_wrap(True)
+        note.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+        note.set_max_width_chars(45)
+        note.set_justify(Gtk.Justification.CENTER)
         note.add_css_class("muted")
         box.append(note)
         return box
@@ -483,17 +500,23 @@ class MainWindow(Gtk.ApplicationWindow):
         labels = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         labels.set_hexpand(True)
         self.detail_name = Gtk.Label(xalign=0)
+        self.detail_name.set_ellipsize(Pango.EllipsizeMode.END)
         self.detail_name.add_css_class("hero-title")
         labels.append(self.detail_name)
         self.detail_description = Gtk.Label(xalign=0)
         self.detail_description.set_wrap(True)
+        self.detail_description.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
         self.detail_description.add_css_class("muted")
         labels.append(self.detail_description)
         meta = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.detail_source = Gtk.Label()
+        self.detail_source.set_ellipsize(Pango.EllipsizeMode.END)
+        self.detail_source.set_max_width_chars(24)
         self.detail_source.add_css_class("source-badge")
         meta.append(self.detail_source)
         self.detail_id = Gtk.Label(xalign=0)
+        self.detail_id.set_hexpand(True)
+        self.detail_id.set_ellipsize(Pango.EllipsizeMode.END)
         self.detail_id.set_selectable(True)
         self.detail_id.add_css_class("muted")
         meta.append(self.detail_id)
@@ -523,6 +546,8 @@ class MainWindow(Gtk.ApplicationWindow):
         section_title.set_hexpand(True)
         section.append(section_title)
         self.plan_summary = Gtk.Label(xalign=1)
+        self.plan_summary.set_ellipsize(Pango.EllipsizeMode.END)
+        self.plan_summary.set_max_width_chars(38)
         self.plan_summary.add_css_class("muted")
         section.append(self.plan_summary)
         outer.append(section)
@@ -550,18 +575,20 @@ class MainWindow(Gtk.ApplicationWindow):
 
         options = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         options.add_css_class("safety-card")
-        self.permanent_check = Gtk.CheckButton(label=_("Benutzerdaten endgültig löschen (keine Papierkorb-Wiederherstellung)"))
+        self.permanent_check = _wrapping_check_button(
+            _("Benutzerdaten endgültig löschen (keine Papierkorb-Wiederherstellung)")
+        )
         self.permanent_check.set_active(False)
         self.permanent_check.connect("toggled", self._permanent_mode_changed)
         options.append(self.permanent_check)
-        self.backup_check = Gtk.CheckButton(label=_("Safety Backup vor endgültigem Löschen erstellen"))
+        self.backup_check = _wrapping_check_button(_("Safety Backup vor endgültigem Löschen erstellen"))
         self.backup_check.set_active(True)
         self.backup_check.set_sensitive(False)
         self.backup_check.set_tooltip_text(
             _("Sichert Einstellungen und Spielstände; Cache und Programmdateien werden ausgelassen.")
         )
         options.append(self.backup_check)
-        self.process_check = Gtk.CheckButton(label=_("Zugehörige laufende Prozesse automatisch beenden"))
+        self.process_check = _wrapping_check_button(_("Zugehörige laufende Prozesse automatisch beenden"))
         self.process_check.set_active(True)
         options.append(self.process_check)
         outer.append(options)
@@ -573,6 +600,8 @@ class MainWindow(Gtk.ApplicationWindow):
         bottom.set_margin_bottom(14)
         self.delete_note = Gtk.Label(label=_("Vor dem Löschen erscheint eine letzte Zusammenfassung."), xalign=0)
         self.delete_note.set_hexpand(True)
+        self.delete_note.set_wrap(True)
+        self.delete_note.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
         self.delete_note.add_css_class("muted")
         bottom.append(self.delete_note)
         self.remove_button = Gtk.Button(label=_("Restlos entfernen"))
@@ -755,9 +784,13 @@ class MainWindow(Gtk.ApplicationWindow):
         _clear_box(self.detail_icon_box)
         self.detail_icon_box.append(_icon_widget(app.icon, 64))
         self.detail_name.set_text(app.name)
+        self.detail_name.set_tooltip_text(app.name)
         self.detail_description.set_text(display_text(app.description) or _("Keine Beschreibung verfügbar"))
-        self.detail_source.set_text(f"{display_text(app.source.value)} · {display_text(app.scope)}")
+        source_text = f"{display_text(app.source.value)} · {display_text(app.scope)}"
+        self.detail_source.set_text(source_text)
+        self.detail_source.set_tooltip_text(source_text)
         self.detail_id.set_text(app.package_id)
+        self.detail_id.set_tooltip_text(app.package_id)
         self.detail_stack.set_visible_child_name("detail")
 
     def _analyze_current(self) -> None:
@@ -813,7 +846,9 @@ class MainWindow(Gtk.ApplicationWindow):
                 icon = Gtk.Image.new_from_icon_name("system-software-install-symbolic")
                 line.append(icon)
                 label = Gtk.Label(label=display_text(action.label), xalign=0)
+                label.set_hexpand(True)
                 label.set_wrap(True)
+                label.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
                 line.append(label)
                 self.action_card.append(line)
             self.action_card.set_visible(True)
@@ -833,6 +868,7 @@ class MainWindow(Gtk.ApplicationWindow):
         for warning in warnings:
             line = Gtk.Label(label=f"⚠ {display_text(warning)}", xalign=0)
             line.set_wrap(True)
+            line.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
             self.warning_box.append(line)
         self.warning_box.set_visible(bool(warnings))
         self._update_plan_summary()
@@ -883,9 +919,11 @@ class MainWindow(Gtk.ApplicationWindow):
             xalign=0,
         )
         note.set_wrap(True)
+        note.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
         content.append(note)
         status = Gtk.Label(label=_("Speicherorte werden ermittelt …"), xalign=0)
         status.set_wrap(True)
+        status.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
         status.add_css_class("muted")
         content.append(status)
         scroll = Gtk.ScrolledWindow()
@@ -939,6 +977,7 @@ class MainWindow(Gtk.ApplicationWindow):
             labels.append(path)
             reason = Gtk.Label(label=display_text(location.reason), xalign=0)
             reason.set_wrap(True)
+            reason.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
             reason.add_css_class("muted")
             labels.append(reason)
             row.append(labels)
@@ -1195,6 +1234,8 @@ class MainWindow(Gtk.ApplicationWindow):
         content.set_margin_end(20)
 
         title = Gtk.Label(label=_("Wiederherstellbare Benutzerdaten und Safety Backups"), xalign=0)
+        title.set_ellipsize(Pango.EllipsizeMode.END)
+        title.set_tooltip_text(_("Wiederherstellbare Benutzerdaten und Safety Backups"))
         title.add_css_class("hero-title")
         content.append(title)
         note = Gtk.Label(
@@ -1205,6 +1246,7 @@ class MainWindow(Gtk.ApplicationWindow):
             xalign=0,
         )
         note.set_wrap(True)
+        note.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
         note.add_css_class("muted")
         content.append(note)
 
@@ -1258,6 +1300,7 @@ class MainWindow(Gtk.ApplicationWindow):
         if empty_text:
             empty = Gtk.Label(label=empty_text)
             empty.set_wrap(True)
+            empty.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
             empty.set_margin_top(36)
             empty.set_margin_bottom(36)
             empty.set_margin_start(12)
@@ -1282,6 +1325,8 @@ class MainWindow(Gtk.ApplicationWindow):
         labels = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
         labels.set_hexpand(True)
         name = Gtk.Label(label=record.app_name, xalign=0)
+        name.set_ellipsize(Pango.EllipsizeMode.END)
+        name.set_tooltip_text(record.app_name)
         name.add_css_class("app-name")
         labels.append(name)
         timestamp = record.timestamp.replace("T", " ").replace("Z", " UTC")
@@ -1297,6 +1342,8 @@ class MainWindow(Gtk.ApplicationWindow):
             ),
             xalign=0,
         )
+        details.set_ellipsize(Pango.EllipsizeMode.END)
+        details.set_tooltip_text(details.get_text())
         details.add_css_class("muted")
         labels.append(details)
         if record.actions:
@@ -1305,6 +1352,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 xalign=0,
             )
             action_note.set_wrap(True)
+            action_note.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
             action_note.add_css_class("muted")
             labels.append(action_note)
         box.append(labels)
@@ -1377,6 +1425,7 @@ class MainWindow(Gtk.ApplicationWindow):
         area.append(spinner)
         status = Gtk.Label(label=_("Daten werden an ihre ursprünglichen Orte zurückgeholt …"))
         status.set_wrap(True)
+        status.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
         area.append(status)
         progress.present()
 
@@ -1649,12 +1698,16 @@ class RestlosApplication(Gtk.Application):
         content.append(spinner)
         label = Gtk.Label(label=_("Update wird vorbereitet …"))
         label.set_wrap(True)
+        label.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
         label.set_max_width_chars(58)
         content.append(label)
         progress_bar = Gtk.ProgressBar()
         progress_bar.set_size_request(460, -1)
         content.append(progress_bar)
         note = Gtk.Label(label=_("Der aktuelle Restlos Uninstaller bleibt bei einem Fehler weiterhin startfähig."))
+        note.set_wrap(True)
+        note.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+        note.set_max_width_chars(58)
         note.add_css_class("muted")
         content.append(note)
         self._update_progress_dialog = dialog
