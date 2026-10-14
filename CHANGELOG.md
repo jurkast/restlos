@@ -5,10 +5,11 @@
 - neue Oberfläche in der Designsprache von Restlos AIR mit dunklen Petrol-Flächen, Mint-Akzenten, ruhigen Karten und kompakten Bedienelementen
 - überarbeitete Markenleiste und deutlich hervorgehobene Schaltfläche zum Prüfen der zugehörigen Dateiordner
 - responsive Beschriftungen: lange Namen, Paketkennungen, Hinweise und Sicherheitsoptionen bleiben auch in der Mindestfenstergröße innerhalb ihrer Karten
+- Warnungen erscheinen kompakt mit Auslassungspunkten und lassen sich per Klick vollständig auf- und wieder zuklappen
 - zusätzliche Erkennung typischer Update-, Updater-, Patch- und Updatecache-Rückstände
 - zusätzliche Erkennung benutzereigener Autostart-Dateien sowie systemd- und D-Bus-Dienste einer Anwendung
 - bestehende Schutzregeln bleiben unverändert: unsichere, gemeinsam genutzte oder nicht eindeutig zuordenbare Pfade werden nicht blind gelöscht
-- 135 automatisierte Tests einschließlich neuer Regressionstests für Update-Rückstände, Benutzer-Dienste und lange Oberflächentexte
+- 136 automatisierte Tests einschließlich neuer Regressionstests für Update-Rückstände, Benutzer-Dienste und responsive Oberflächentexte
 
 ## 1.9.0 – 2026-09-05
 

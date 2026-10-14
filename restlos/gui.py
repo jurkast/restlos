@@ -159,6 +159,17 @@ progressbar progress { background: #84dfc5; border-radius: 999px; }
   border-radius: 12px;
   padding: 12px;
 }
+.warning-row { padding: 2px 0; }
+button.warning-more {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0 7px;
+  color: #f2d0a8;
+  background: transparent;
+  border-color: #6f563b;
+  font-weight: 800;
+}
+button.warning-more:hover { background: #4a3827; }
 .target-row { border-bottom: 1px solid #2d4147; padding: 9px 4px; }
 .target-row:hover { color: #ecf5f2; background: #20343b; }
 .confidence-certain { color: #84dfc5; }
@@ -230,6 +241,45 @@ class ApplicationRow(Gtk.ListBoxRow):
         labels.append(source)
         box.append(labels)
         self.set_child(box)
+
+
+class WarningRow(Gtk.Box):
+    def __init__(self, message: str) -> None:
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.message = message
+        self.expanded = False
+        self.add_css_class("warning-row")
+
+        icon = Gtk.Label(label="⚠")
+        icon.set_valign(Gtk.Align.START)
+        self.append(icon)
+
+        self.label = Gtk.Label(label=message, xalign=0)
+        self.label.set_hexpand(True)
+        self.label.set_single_line_mode(True)
+        self.label.set_ellipsize(Pango.EllipsizeMode.END)
+        self.label.set_tooltip_text(message)
+        self.append(self.label)
+
+        self.more_button = Gtk.Button(label="…")
+        self.more_button.set_valign(Gtk.Align.START)
+        self.more_button.add_css_class("warning-more")
+        self.more_button.set_tooltip_text(_("Vollständigen Hinweis anzeigen"))
+        self.more_button.connect("clicked", self._toggle)
+        self.append(self.more_button)
+
+    def _toggle(self, _button: Gtk.Button) -> None:
+        self.expanded = not self.expanded
+        self.label.set_single_line_mode(not self.expanded)
+        self.label.set_wrap(self.expanded)
+        self.label.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+        self.label.set_ellipsize(
+            Pango.EllipsizeMode.NONE if self.expanded else Pango.EllipsizeMode.END
+        )
+        self.more_button.set_label("−" if self.expanded else "…")
+        self.more_button.set_tooltip_text(
+            _("Hinweis einklappen") if self.expanded else _("Vollständigen Hinweis anzeigen")
+        )
 
 
 class TargetRow(Gtk.ListBoxRow):
@@ -866,10 +916,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         warnings = [*plan.warnings, *([plan.safety_error] if plan.safety_error else [])]
         for warning in warnings:
-            line = Gtk.Label(label=f"⚠ {display_text(warning)}", xalign=0)
-            line.set_wrap(True)
-            line.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
-            self.warning_box.append(line)
+            self.warning_box.append(WarningRow(display_text(warning)))
         self.warning_box.set_visible(bool(warnings))
         self._update_plan_summary()
         return False

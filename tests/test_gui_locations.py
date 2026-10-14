@@ -10,7 +10,7 @@ from restlos.locations import AppLocation, LocationResult
 from restlos.models import AppRecord, Confidence, RemovalPlan, RemovalResult, RemovalTarget, SharedUse, SourceKind
 
 try:
-    from restlos.gui import Gio, Gtk, MainWindow, Pango, RestlosApplication, TargetRow
+    from restlos.gui import Gio, Gtk, MainWindow, Pango, RestlosApplication, TargetRow, WarningRow
     GTK_AVAILABLE = Gtk.init_check()
 except (ImportError, ValueError):
     GTK_AVAILABLE = False
@@ -92,6 +92,21 @@ class LocationGuiTests(unittest.TestCase):
             label = check.get_child()
             self.assertIsInstance(label, Gtk.Label)
             self.assertTrue(label.get_wrap())
+
+    def test_warning_row_expands_from_ellipsis_and_collapses_again(self) -> None:
+        row = WarningRow("A deliberately long warning that must not leave its card")
+        self.assertEqual(row.label.get_ellipsize(), Pango.EllipsizeMode.END)
+        self.assertFalse(row.label.get_wrap())
+        self.assertEqual(row.more_button.get_label(), "…")
+
+        row.more_button.emit("clicked")
+        self.assertEqual(row.label.get_ellipsize(), Pango.EllipsizeMode.NONE)
+        self.assertTrue(row.label.get_wrap())
+        self.assertEqual(row.more_button.get_label(), "−")
+
+        row.more_button.emit("clicked")
+        self.assertEqual(row.label.get_ellipsize(), Pango.EllipsizeMode.END)
+        self.assertFalse(row.label.get_wrap())
 
     @patch("restlos.gui.Gtk.MessageDialog")
     def test_invalidated_plan_requires_reanalysis_not_automatic_retry(self, message) -> None:

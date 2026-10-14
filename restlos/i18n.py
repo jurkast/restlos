@@ -55,6 +55,8 @@ ENGLISH: dict[str, str] = {
     "Löschplan ungültig – bitte erneut analysieren": "Removal plan invalid – please analyze again",
     "Speicherorte …": "File locations…",
     "Programmdateien und zugehörige Daten vor dem Löschen ansehen": "Inspect program files and associated data before removal",
+    "Vollständigen Hinweis anzeigen": "Show full notice",
+    "Hinweis einklappen": "Collapse notice",
     "Ordner öffnen": "Open folder",
     "Ordner öffnen: {path}": "Open folder: {path}",
     "Speicherorte – {name}": "File locations – {name}",
