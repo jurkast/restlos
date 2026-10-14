@@ -25,108 +25,151 @@ from .utils import format_size
 
 
 CSS = b"""
-window.restlos-root { background: @window_bg_color; }
-window.restlos-root.restlos-light { color: #202128; background: #f7f7fa; }
-window.restlos-root.restlos-dark { color: #f4f2f7; background: #1d1c21; }
-.brand-mark {
-  min-width: 32px;
-  min-height: 32px;
-  border-radius: 10px;
-  background: @accent_bg_color;
-  color: @accent_fg_color;
-  font-size: 17px;
-  font-weight: 900;
+/* Restlos AIR design language: deep petrol surfaces, mint accents and calm cards. */
+window.restlos-root,
+dialog,
+messagedialog {
+  color: #ecf5f2;
+  background: #0d171d;
 }
-.brand-name { font-size: 15px; font-weight: 800; }
-.header-tagline { color: alpha(@window_fg_color, 0.62); font-size: 0.86em; }
+window.restlos-root headerbar {
+  min-height: 58px;
+  color: #ecf5f2;
+  background: #0d171d;
+  border-bottom: 1px solid #2d4147;
+  box-shadow: none;
+}
+.brand-name {
+  color: #a6babc;
+  font-size: 0.76em;
+  font-weight: 750;
+  letter-spacing: 3px;
+}
+.header-tagline { color: #ecf5f2; font-size: 0.90em; font-weight: 650; }
 .sidebar {
-  background: alpha(@view_bg_color, 0.76);
-  border-right: 1px solid alpha(@borders, 0.62);
+  background: #101e24;
+  border-right: 1px solid #2d4147;
 }
 .sidebar-heading, .eyebrow, .stat-heading {
-  color: alpha(@window_fg_color, 0.58);
-  font-size: 0.78em;
-  font-weight: 800;
-  letter-spacing: 1.1px;
+  color: #9bb1b5;
+  font-size: 0.76em;
+  font-weight: 750;
+  letter-spacing: 2px;
 }
+button,
+menubutton > button,
+dropdown > button {
+  color: #e6f4f0;
+  background: #23353c;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  box-shadow: none;
+  text-shadow: none;
+  padding: 8px 12px;
+}
+button:hover,
+menubutton > button:hover,
+dropdown > button:hover { background: #304a53; }
+button:checked { background: #36594f; }
+button:focus,
+entry:focus,
+dropdown > button:focus { border-color: #84dfc5; box-shadow: 0 0 0 1px #84dfc5; }
+button:disabled { color: #778b8f; background: #1b292f; }
+button.destructive-action {
+  color: #fff4ee;
+  background: #a74434;
+  border-color: #c65a47;
+  font-weight: 750;
+}
+button.destructive-action:hover { background: #bd513f; }
+button.accent-button {
+  color: #a9f2dd;
+  background: #27433f;
+  border-color: #3c665e;
+}
+entry,
+searchentry,
+dropdown > button {
+  color: #ecf5f2;
+  background: #192a31;
+  border: 1px solid #3c555d;
+  border-radius: 9px;
+}
+entry selection { color: #0d171d; background: #84dfc5; }
+popover contents {
+  color: #ecf5f2;
+  background: #192a31;
+  border: 1px solid #35505a;
+  border-radius: 10px;
+}
+popover modelbutton:hover { background: #304a53; }
+separator, paned > separator { background: #2d4147; min-width: 1px; min-height: 1px; }
+scrollbar slider { background: #45616a; border-radius: 999px; }
+scrollbar slider:hover { background: #5c7a83; }
+checkbutton check {
+  color: #0d171d;
+  background: #192a31;
+  border: 1px solid #58717a;
+  border-radius: 5px;
+}
+checkbutton check:checked { color: #0d171d; background: #84dfc5; border-color: #84dfc5; }
+progressbar trough { background: #23353c; border-radius: 999px; }
+progressbar progress { background: #84dfc5; border-radius: 999px; }
 .scan-card {
-  padding: 9px 11px;
-  border-radius: 12px;
-  background: alpha(@accent_bg_color, 0.10);
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #192a31;
+  border: 1px solid #2d4147;
 }
-.app-list { background: transparent; }
-.app-list row { border-radius: 12px; margin: 3px 0; }
-.app-list row:hover { background: alpha(@window_fg_color, 0.055); }
-.app-list row:selected {
-  background: alpha(@accent_bg_color, 0.18);
-  color: @window_fg_color;
-}
+.app-list { color: #ecf5f2; background: transparent; }
+.app-list row { border-radius: 10px; margin: 3px 0; }
+.app-list row:hover { background: #192a31; }
+.app-list row:selected { color: #ecf5f2; background: #263d43; }
 .app-name { font-weight: 750; }
-.app-source { color: alpha(@window_fg_color, 0.58); font-size: 0.88em; }
-.muted { color: alpha(@window_fg_color, 0.62); }
+.app-source, .muted { color: #a6babc; }
+.app-source { font-size: 0.88em; }
 .source-badge {
   border-radius: 999px;
-  padding: 3px 9px;
-  background: alpha(@accent_bg_color, 0.14);
-  color: @accent_color;
-  font-size: 0.86em;
-  font-weight: 700;
+  padding: 4px 10px;
+  background: #27433f;
+  color: #84dfc5;
+  font-size: 0.84em;
+  font-weight: 750;
 }
 .hero-card, .card, .safety-card, .stat-tile {
-  background: @card_bg_color;
-  border: 1px solid alpha(@borders, 0.62);
+  color: #ecf5f2;
+  background: #192a31;
+  border: 1px solid #2d4147;
 }
-.hero-card { border-radius: 18px; padding: 18px; }
-.hero-title { font-size: 1.8em; font-weight: 800; }
-.section-title { font-size: 1.15em; font-weight: 800; }
-.card { border-radius: 16px; padding: 15px; }
-.stat-tile { border-radius: 14px; padding: 13px; }
-.stat-value { font-size: 1.15em; font-weight: 800; }
-.safety-card { border-radius: 16px; padding: 14px; }
+.hero-card { border-radius: 16px; padding: 18px; }
+.hero-title { color: #f1f8f6; font-size: 1.8em; font-weight: 650; }
+.section-title { color: #ecf5f2; font-size: 1.15em; font-weight: 650; }
+.card { border-radius: 13px; padding: 14px; }
+.stat-tile { border-radius: 12px; padding: 13px; }
+.stat-value { color: #ecf5f2; font-size: 1.25em; font-weight: 650; }
+.safety-card { border-radius: 13px; padding: 14px; }
 .action-bar {
   padding-top: 12px;
-  border-top: 1px solid alpha(@borders, 0.45);
+  border-top: 1px solid #2d4147;
 }
 .warning-card {
-  background: alpha(#f6d32d, 0.12);
-  border: 1px solid alpha(#e5a50a, 0.48);
-  border-radius: 14px;
+  color: #f2d0a8;
+  background: #35291e;
+  border: 1px solid #6f563b;
+  border-radius: 12px;
   padding: 12px;
 }
-.target-row { border-bottom: 1px solid alpha(@borders, 0.35); padding: 9px 4px; }
-.confidence-certain { color: #2ec27e; }
-.confidence-high { color: #3584e4; }
-.confidence-possible { color: #e5a50a; }
-.danger-note { color: #c01c28; font-weight: 650; }
-.empty-title { font-size: 1.5em; font-weight: 800; }
-.restlos-light .sidebar { background: #f0eff5; border-color: #d9d7e0; }
-.restlos-dark .sidebar { background: #242329; border-color: #3b3942; }
-.restlos-light .hero-card,
-.restlos-light .card,
-.restlos-light .safety-card,
-.restlos-light .stat-tile { background: #ffffff; border-color: #dedce5; }
-.restlos-dark .hero-card,
-.restlos-dark .card,
-.restlos-dark .safety-card,
-.restlos-dark .stat-tile { background: #29282e; border-color: #403e46; }
+.target-row { border-bottom: 1px solid #2d4147; padding: 9px 4px; }
+.target-row:hover { color: #ecf5f2; background: #20343b; }
+.confidence-certain { color: #84dfc5; }
+.confidence-high { color: #8fc9ff; }
+.confidence-possible { color: #f2ba79; }
+.danger-note { color: #ff9284; font-weight: 700; }
+.empty-title { color: #ecf5f2; font-size: 1.5em; font-weight: 650; }
 .restlos-light .muted,
-.restlos-light .app-source,
-.restlos-light .header-tagline,
-.restlos-light .sidebar-heading,
-.restlos-light .eyebrow,
-.restlos-light .stat-heading { color: #68788e; }
 .restlos-dark .muted,
-.restlos-dark .app-source,
-.restlos-dark .header-tagline,
-.restlos-dark .sidebar-heading,
-.restlos-dark .eyebrow,
-.restlos-dark .stat-heading { color: #b9b6c1; }
-.restlos-light .scan-card { background: #e2f2fb; }
-.restlos-dark .scan-card { background: #253540; }
-.restlos-light .warning-card { color: #594000; background: #fff7e8; border-color: #e7c788; }
-.restlos-dark .warning-card { color: #f4d38a; background: #3a3020; border-color: #75603b; }
-.restlos-light .target-row:hover { color: #202128; background: #f3f2f6; }
-.restlos-dark .target-row:hover { color: #f4f2f7; background: #35333b; }
+.restlos-light .app-source,
+.restlos-dark .app-source { color: #a6babc; }
 """
 
 
@@ -285,18 +328,19 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def _build_header(self) -> None:
         header = Gtk.HeaderBar()
+        header.add_css_class("restlos-header")
 
-        brand = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        mark = Gtk.Label(label="R", xalign=0.5, yalign=0.5)
-        mark.add_css_class("brand-mark")
-        mark.set_valign(Gtk.Align.CENTER)
-        name = Gtk.Label(label=APP_NAME, xalign=0)
+        brand = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=1)
+        brand.set_valign(Gtk.Align.CENTER)
+        name = Gtk.Label(label="RESTLOS  /  UNINSTALLER", xalign=0)
         name.add_css_class("brand-name")
-        brand.append(mark)
         brand.append(name)
+        brand_tagline = Gtk.Label(label=APP_TAGLINE, xalign=0)
+        brand_tagline.add_css_class("header-tagline")
+        brand.append(brand_tagline)
         header.pack_start(brand)
 
-        tagline = Gtk.Label(label=APP_TAGLINE)
+        tagline = Gtk.Label(label=_("Auswählen. Prüfen. Sicher entfernen."))
         tagline.add_css_class("header-tagline")
         tagline.set_ellipsize(Pango.EllipsizeMode.END)
         header.set_title_widget(tagline)
@@ -458,6 +502,7 @@ class MainWindow(Gtk.ApplicationWindow):
         hero_actions = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         hero_actions.set_valign(Gtk.Align.START)
         self.locations_button = Gtk.Button(label=_("Speicherorte …"))
+        self.locations_button.add_css_class("accent-button")
         self.locations_button.set_tooltip_text(_("Programmdateien und zugehörige Daten vor dem Löschen ansehen"))
         self.locations_button.connect("clicked", self._show_locations)
         hero_actions.append(self.locations_button)

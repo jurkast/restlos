@@ -82,6 +82,7 @@ ENGLISH: dict[str, str] = {
     "Flatpak-Programmdateien (paketverwaltet)": "Flatpak program files (package-managed)",
     "Paketdateien (Ordner kann gemeinsam genutzt sein)": "Package files (folder may be shared)",
     "Programmliste neu einlesen": "Refresh application list",
+    "Auswählen. Prüfen. Sicher entfernen.": "Select. Review. Remove safely.",
     "Wiederherstellungszentrum …": "Recovery Center…",
     "Protokollordner öffnen": "Open history folder",
     "Nach Updates suchen …": "Check for updates…",

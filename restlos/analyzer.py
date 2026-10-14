@@ -336,7 +336,9 @@ class RemovalAnalyzer:
         reduced = normalized
         removable_suffixes = (
             "appimage", "targz", "tarxz", "zip", "deb", "exe", "msi",
+            "desktop", "service", "socket", "timer", "path", "png", "svg", "xpm", "ico",
             "linuxinstaller", "installer", "linuxsetup", "setup", "launcher", "client",
+            "updatecache", "updater", "updates", "update", "patcher", "patches", "patch",
         )
         changed = True
         while changed:
@@ -439,6 +441,10 @@ class RemovalAnalyzer:
             self.home / ".local/share/applications",
             self.home / ".local/share/icons",
             self.home / ".local/share/pixmaps",
+            self.home / ".config/autostart",
+            self.home / ".config/systemd/user",
+            self.home / ".local/share/systemd/user",
+            self.home / ".local/share/dbus-1/services",
         )
         for root in nested_roots:
             if not root.is_dir():

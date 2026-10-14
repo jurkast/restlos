@@ -88,6 +88,29 @@ class AnalyzerTests(unittest.TestCase):
         self.assertIn(launcher, paths)
         self.assertIn(desktop, paths)
 
+    def test_update_cache_and_user_startup_files_are_detected(self) -> None:
+        updater = self.home / ".cache/Vendor/TestQuestUpdater"
+        updater.mkdir(parents=True)
+        (updater / "pending-update.bin").write_bytes(b"update")
+        autostart = self.home / ".config/autostart/testquest-updater.desktop"
+        autostart.parent.mkdir(parents=True)
+        autostart.write_text("[Desktop Entry]\nName=Test Quest Updater\n", encoding="utf-8")
+        service = self.home / ".config/systemd/user/testquest-update.service"
+        service.parent.mkdir(parents=True)
+        service.write_text("[Service]\nExecStart=/bin/true\n", encoding="utf-8")
+
+        app = AppRecord(
+            key="manual:testquest",
+            name="Test Quest",
+            source=SourceKind.MANUAL,
+            package_id="testquest",
+        )
+        paths = {target.path for target in RemovalAnalyzer(self.home).discover_targets(app)}
+
+        self.assertIn(updater, paths)
+        self.assertIn(autostart, paths)
+        self.assertIn(service, paths)
+
     def test_flatpak_shared_directories_are_never_targets(self) -> None:
         (self.home / ".cache/flatpak").mkdir()
         (self.home / ".local/share/flatpak").mkdir()

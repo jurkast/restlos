@@ -1,5 +1,14 @@
 # Änderungsprotokoll
 
+## 2.0.0 – 2026-10-14
+
+- neue Oberfläche in der Designsprache von Restlos AIR mit dunklen Petrol-Flächen, Mint-Akzenten, ruhigen Karten und kompakten Bedienelementen
+- überarbeitete Markenleiste und deutlich hervorgehobene Schaltfläche zum Prüfen der zugehörigen Dateiordner
+- zusätzliche Erkennung typischer Update-, Updater-, Patch- und Updatecache-Rückstände
+- zusätzliche Erkennung benutzereigener Autostart-Dateien sowie systemd- und D-Bus-Dienste einer Anwendung
+- bestehende Schutzregeln bleiben unverändert: unsichere, gemeinsam genutzte oder nicht eindeutig zuordenbare Pfade werden nicht blind gelöscht
+- 134 automatisierte Tests einschließlich neuer Regressionstests für Update-Rückstände und Benutzer-Dienste
+
 ## 1.9.0 – 2026-09-05
 
 - vollständig überarbeitete GTK-4-Oberfläche im gemeinsamen Erscheinungsbild von Restlos Uninstaller und Restlos GameCheck

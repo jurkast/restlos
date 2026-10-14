@@ -1,3 +1,10 @@
+restlos-uninstaller (2.0.0-1ppa1) UNRELEASED; urgency=medium
+
+  * Adopt the Restlos AIR visual design language.
+  * Detect additional updater, autostart, systemd and D-Bus leftovers.
+
+ -- jurkast <312310339+jurkast@users.noreply.github.com>  Wed, 14 Oct 2026 12:00:00 +0200
+
 restlos-uninstaller (1.9.0-1ppa1) UNRELEASED; urgency=medium
 
   * Add native Debian source packaging for Ubuntu and Zorin OS.
