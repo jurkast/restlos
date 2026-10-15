@@ -25,33 +25,22 @@ from .utils import format_size
 
 
 CSS = b"""
-/* Restlos AIR design language: deep petrol surfaces, mint accents and calm cards. */
-window.restlos-root,
-dialog,
-messagedialog {
-  color: #ecf5f2;
-  background: #0d171d;
-}
+/* Restlos AIR design language: translucent surfaces, mint accents and calm cards. */
+window.restlos-root { background-color: transparent; }
 window.restlos-root headerbar {
   min-height: 58px;
-  color: #ecf5f2;
-  background: #0d171d;
-  border-bottom: 1px solid #2d4147;
   box-shadow: none;
 }
 .brand-name {
-  color: #a6babc;
   font-size: 0.76em;
   font-weight: 750;
   letter-spacing: 3px;
 }
-.header-tagline { color: #ecf5f2; font-size: 0.90em; font-weight: 650; }
+.header-tagline { font-size: 0.90em; font-weight: 650; }
 .sidebar {
-  background: #101e24;
-  border-right: 1px solid #2d4147;
+  border-right: 1px solid;
 }
 .sidebar-heading, .eyebrow, .stat-heading {
-  color: #9bb1b5;
   font-size: 0.76em;
   font-weight: 750;
   letter-spacing: 2px;
@@ -59,22 +48,15 @@ window.restlos-root headerbar {
 button,
 menubutton > button,
 dropdown > button {
-  color: #e6f4f0;
-  background: #23353c;
   border: 1px solid transparent;
   border-radius: 9px;
   box-shadow: none;
   text-shadow: none;
   padding: 8px 12px;
 }
-button:hover,
-menubutton > button:hover,
-dropdown > button:hover { background: #304a53; }
-button:checked { background: #36594f; }
 button:focus,
 entry:focus,
-dropdown > button:focus { border-color: #84dfc5; box-shadow: 0 0 0 1px #84dfc5; }
-button:disabled { color: #778b8f; background: #1b292f; }
+dropdown > button:focus { border-color: #55bda3; box-shadow: 0 0 0 1px #55bda3; }
 button.destructive-action {
   color: #fff4ee;
   background: #a74434;
@@ -82,80 +64,56 @@ button.destructive-action {
   font-weight: 750;
 }
 button.destructive-action:hover { background: #bd513f; }
-button.accent-button {
-  color: #a9f2dd;
-  background: #27433f;
-  border-color: #3c665e;
-}
 entry,
 searchentry,
 dropdown > button {
-  color: #ecf5f2;
-  background: #192a31;
-  border: 1px solid #3c555d;
+  border: 1px solid;
   border-radius: 9px;
 }
-entry selection { color: #0d171d; background: #84dfc5; }
 popover contents {
-  color: #ecf5f2;
-  background: #192a31;
-  border: 1px solid #35505a;
+  border: 1px solid;
   border-radius: 10px;
 }
-popover modelbutton:hover { background: #304a53; }
-separator, paned > separator { background: #2d4147; min-width: 1px; min-height: 1px; }
-scrollbar slider { background: #45616a; border-radius: 999px; }
-scrollbar slider:hover { background: #5c7a83; }
 checkbutton check {
-  color: #0d171d;
-  background: #192a31;
-  border: 1px solid #58717a;
+  border: 1px solid;
   border-radius: 5px;
 }
 checkbutton check:checked { color: #0d171d; background: #84dfc5; border-color: #84dfc5; }
-progressbar trough { background: #23353c; border-radius: 999px; }
+separator, paned > separator { min-width: 1px; min-height: 1px; }
+scrollbar slider { border-radius: 999px; }
+progressbar trough { border-radius: 999px; }
 progressbar progress { background: #84dfc5; border-radius: 999px; }
 .scan-card {
   padding: 10px 12px;
   border-radius: 10px;
-  background: #192a31;
-  border: 1px solid #2d4147;
+  border: 1px solid;
 }
-.app-list { color: #ecf5f2; background: transparent; }
+.app-list { background: transparent; }
 .app-list row { border-radius: 10px; margin: 3px 0; }
-.app-list row:hover { background: #192a31; }
-.app-list row:selected { color: #ecf5f2; background: #263d43; }
 .app-name { font-weight: 750; }
-.app-source, .muted { color: #a6babc; }
 .app-source { font-size: 0.88em; }
 .source-badge {
   border-radius: 999px;
   padding: 4px 10px;
-  background: #27433f;
-  color: #84dfc5;
   font-size: 0.84em;
   font-weight: 750;
 }
 .hero-card, .card, .safety-card, .stat-tile {
-  color: #ecf5f2;
-  background: #192a31;
-  border: 1px solid #2d4147;
+  border: 1px solid;
 }
 .hero-card { border-radius: 16px; padding: 18px; }
-.hero-title { color: #f1f8f6; font-size: 1.8em; font-weight: 650; }
-.section-title { color: #ecf5f2; font-size: 1.15em; font-weight: 650; }
+.hero-title { font-size: 1.8em; font-weight: 650; }
+.section-title { font-size: 1.15em; font-weight: 650; }
 .card { border-radius: 13px; padding: 14px; }
 .stat-tile { border-radius: 12px; padding: 13px; }
-.stat-value { color: #ecf5f2; font-size: 1.25em; font-weight: 650; }
+.stat-value { font-size: 1.25em; font-weight: 650; }
 .safety-card { border-radius: 13px; padding: 14px; }
 .action-bar {
   padding-top: 12px;
-  border-top: 1px solid #2d4147;
+  border-top: 1px solid;
 }
 .warning-card {
-  color: #f2d0a8;
-  background: #35291e;
-  border: 1px solid #6f563b;
+  border: 1px solid;
   border-radius: 12px;
   padding: 12px;
 }
@@ -164,23 +122,185 @@ button.warning-more {
   min-width: 28px;
   min-height: 28px;
   padding: 0 7px;
-  color: #f2d0a8;
   background: transparent;
-  border-color: #6f563b;
   font-weight: 800;
 }
-button.warning-more:hover { background: #4a3827; }
-.target-row { border-bottom: 1px solid #2d4147; padding: 9px 4px; }
-.target-row:hover { color: #ecf5f2; background: #20343b; }
-.confidence-certain { color: #84dfc5; }
-.confidence-high { color: #8fc9ff; }
-.confidence-possible { color: #f2ba79; }
-.danger-note { color: #ff9284; font-weight: 700; }
-.empty-title { color: #ecf5f2; font-size: 1.5em; font-weight: 650; }
-.restlos-light .muted,
-.restlos-dark .muted,
-.restlos-light .app-source,
-.restlos-dark .app-source { color: #a6babc; }
+.target-row { border-bottom: 1px solid; padding: 9px 4px; }
+.danger-note { font-weight: 700; }
+.empty-title { font-size: 1.5em; font-weight: 650; }
+
+/* AIR dark mode: the original deep-petrol, slightly translucent surface. */
+window.restlos-dark {
+  color: #ecf5f2;
+  background-color: rgba(13, 23, 29, 0.96);
+}
+window.restlos-dark headerbar {
+  color: #ecf5f2;
+  background-color: rgba(13, 23, 29, 0.94);
+  border-bottom: 1px solid rgba(76, 103, 111, 0.68);
+}
+window.restlos-dark .brand-name,
+window.restlos-dark .muted,
+window.restlos-dark .app-source { color: #a6babc; }
+window.restlos-dark .header-tagline,
+window.restlos-dark .hero-title,
+window.restlos-dark .section-title,
+window.restlos-dark .stat-value,
+window.restlos-dark .empty-title { color: #ecf5f2; }
+window.restlos-dark .sidebar-heading,
+window.restlos-dark .eyebrow,
+window.restlos-dark .stat-heading { color: #9bb1b5; }
+window.restlos-dark .sidebar {
+  background-color: rgba(16, 30, 36, 0.91);
+  border-color: rgba(76, 103, 111, 0.64);
+}
+window.restlos-dark button,
+window.restlos-dark menubutton > button,
+window.restlos-dark dropdown > button { color: #e6f4f0; background-color: rgba(35, 53, 60, 0.94); }
+window.restlos-dark button:hover,
+window.restlos-dark menubutton > button:hover,
+window.restlos-dark dropdown > button:hover { background-color: rgba(48, 74, 83, 0.96); }
+window.restlos-dark button:checked { background-color: #36594f; }
+window.restlos-dark button:disabled { color: #778b8f; background-color: rgba(27, 41, 47, 0.88); }
+window.restlos-dark button.accent-button { color: #a9f2dd; background-color: #27433f; border-color: #3c665e; }
+window.restlos-dark entry,
+window.restlos-dark searchentry,
+window.restlos-dark dropdown > button { color: #ecf5f2; background-color: rgba(25, 42, 49, 0.94); border-color: #3c555d; }
+window.restlos-dark entry selection { color: #0d171d; background-color: #84dfc5; }
+window.restlos-dark popover contents { color: #ecf5f2; background-color: rgba(25, 42, 49, 0.98); border-color: #35505a; }
+window.restlos-dark popover modelbutton:hover { background-color: #304a53; }
+window.restlos-dark separator,
+window.restlos-dark paned > separator { background-color: #2d4147; }
+window.restlos-dark scrollbar slider { background-color: #45616a; }
+window.restlos-dark scrollbar slider:hover { background-color: #5c7a83; }
+window.restlos-dark checkbutton check { color: #0d171d; background-color: #192a31; border-color: #58717a; }
+window.restlos-dark progressbar trough { background-color: #23353c; }
+window.restlos-dark .scan-card { background-color: rgba(25, 42, 49, 0.90); border-color: rgba(76, 103, 111, 0.62); }
+window.restlos-dark .app-list { color: #ecf5f2; }
+window.restlos-dark .app-list row:hover { background-color: rgba(25, 42, 49, 0.88); }
+window.restlos-dark .app-list row:selected { color: #ecf5f2; background-color: rgba(38, 61, 67, 0.96); }
+window.restlos-dark .source-badge { color: #84dfc5; background-color: #27433f; }
+window.restlos-dark .hero-card,
+window.restlos-dark .card,
+window.restlos-dark .safety-card,
+window.restlos-dark .stat-tile { color: #ecf5f2; background-color: rgba(25, 42, 49, 0.92); border-color: rgba(76, 103, 111, 0.62); }
+window.restlos-dark .action-bar { border-color: rgba(76, 103, 111, 0.62); }
+window.restlos-dark .warning-card { color: #f2d0a8; background-color: rgba(53, 41, 30, 0.94); border-color: #6f563b; }
+window.restlos-dark button.warning-more { color: #f2d0a8; background-color: transparent; border-color: #6f563b; }
+window.restlos-dark button.warning-more:hover { background-color: #4a3827; }
+window.restlos-dark .target-row { border-color: #2d4147; }
+window.restlos-dark .target-row:hover { color: #ecf5f2; background-color: rgba(32, 52, 59, 0.94); }
+window.restlos-dark .confidence-certain { color: #84dfc5; }
+window.restlos-dark .confidence-high { color: #8fc9ff; }
+window.restlos-dark .confidence-possible { color: #f2ba79; }
+window.restlos-dark .danger-note { color: #ff9284; }
+
+/* AIR light mode: the same material and hierarchy with bright frosted surfaces. */
+window.restlos-light {
+  color: #17292d;
+  background-color: rgba(241, 248, 246, 0.96);
+}
+window.restlos-light headerbar {
+  color: #17292d;
+  background-color: rgba(248, 252, 251, 0.94);
+  border-bottom: 1px solid rgba(148, 178, 171, 0.62);
+}
+window.restlos-light .brand-name { color: #4e686c; }
+window.restlos-light .muted,
+window.restlos-light .app-source { color: #536b70; }
+window.restlos-light .header-tagline,
+window.restlos-light .hero-title,
+window.restlos-light .section-title,
+window.restlos-light .stat-value,
+window.restlos-light .empty-title { color: #17292d; }
+window.restlos-light .sidebar-heading,
+window.restlos-light .eyebrow,
+window.restlos-light .stat-heading { color: #587278; }
+window.restlos-light .sidebar {
+  background-color: rgba(226, 239, 235, 0.91);
+  border-color: rgba(148, 178, 171, 0.62);
+}
+window.restlos-light button,
+window.restlos-light menubutton > button,
+window.restlos-light dropdown > button { color: #193338; background-color: rgba(219, 234, 230, 0.94); }
+window.restlos-light button:hover,
+window.restlos-light menubutton > button:hover,
+window.restlos-light dropdown > button:hover { background-color: rgba(200, 225, 218, 0.98); }
+window.restlos-light button:checked { color: #12342d; background-color: #b9ddd2; }
+window.restlos-light button:disabled { color: #849795; background-color: rgba(228, 237, 234, 0.88); }
+window.restlos-light button.accent-button { color: #124c40; background-color: #cce8df; border-color: #9dcfc1; }
+window.restlos-light entry,
+window.restlos-light searchentry,
+window.restlos-light dropdown > button { color: #17292d; background-color: rgba(251, 255, 254, 0.94); border-color: #a9c4bd; }
+window.restlos-light entry selection { color: #102521; background-color: #a8e7d5; }
+window.restlos-light popover contents { color: #17292d; background-color: rgba(249, 253, 252, 0.98); border-color: #b5ccc6; }
+window.restlos-light popover modelbutton:hover { background-color: #dcece8; }
+window.restlos-light separator,
+window.restlos-light paned > separator { background-color: #bfd3ce; }
+window.restlos-light scrollbar slider { background-color: #9ab6b0; }
+window.restlos-light scrollbar slider:hover { background-color: #789b94; }
+window.restlos-light checkbutton check { color: #0d171d; background-color: #f8fcfb; border-color: #8eaaa4; }
+window.restlos-light progressbar trough { background-color: #d6e5e1; }
+window.restlos-light .scan-card { background-color: rgba(240, 249, 247, 0.88); border-color: rgba(148, 178, 171, 0.58); }
+window.restlos-light .app-list { color: #17292d; }
+window.restlos-light .app-list row:hover { background-color: rgba(255, 255, 255, 0.66); }
+window.restlos-light .app-list row:selected { color: #132b2f; background-color: rgba(188, 222, 213, 0.90); }
+window.restlos-light .source-badge { color: #176652; background-color: #d3ece5; }
+window.restlos-light .hero-card,
+window.restlos-light .card,
+window.restlos-light .safety-card,
+window.restlos-light .stat-tile { color: #17292d; background-color: rgba(255, 255, 255, 0.88); border-color: rgba(148, 178, 171, 0.58); }
+window.restlos-light .action-bar { border-color: rgba(148, 178, 171, 0.58); }
+window.restlos-light .warning-card { color: #67470a; background-color: rgba(255, 246, 222, 0.94); border-color: #d6b96e; }
+window.restlos-light button.warning-more { color: #67470a; background-color: transparent; border-color: #c5a65b; }
+window.restlos-light button.warning-more:hover { background-color: #f5e5bc; }
+window.restlos-light .target-row { border-color: #c6d7d3; }
+window.restlos-light .target-row:hover { color: #17292d; background-color: rgba(232, 243, 240, 0.92); }
+window.restlos-light .confidence-certain { color: #147a60; }
+window.restlos-light .confidence-high { color: #246cb0; }
+window.restlos-light .confidence-possible { color: #9a6400; }
+window.restlos-light .danger-note { color: #b52d25; }
+
+/* Semantic controls keep their meaning above the mode-wide button colors. */
+window.restlos-dark button.destructive-action,
+window.restlos-light button.destructive-action {
+  color: #fff4ee;
+  background-color: #a74434;
+  border-color: #c65a47;
+}
+window.restlos-dark button.destructive-action:hover,
+window.restlos-light button.destructive-action:hover { background-color: #bd513f; }
+window.restlos-dark button.destructive-action:disabled {
+  color: #778b8f;
+  background-color: rgba(27, 41, 47, 0.88);
+  border-color: #67443f;
+}
+window.restlos-light button.destructive-action:disabled {
+  color: #849795;
+  background-color: rgba(228, 237, 234, 0.88);
+  border-color: #d6aaa3;
+}
+window.restlos-dark button.suggested-action,
+window.restlos-light button.suggested-action {
+  color: #102521;
+  background-color: #84dfc5;
+  border-color: #55bda3;
+}
+window.restlos-dark checkbutton check:checked,
+window.restlos-light checkbutton check:checked {
+  color: #0d171d;
+  background-color: #84dfc5;
+  border-color: #84dfc5;
+}
+window.restlos-dark button:focus,
+window.restlos-dark entry:focus,
+window.restlos-dark dropdown > button:focus,
+window.restlos-light button:focus,
+window.restlos-light entry:focus,
+window.restlos-light dropdown > button:focus {
+  border-color: #55bda3;
+  box-shadow: 0 0 0 1px #55bda3;
+}
 """
 
 
@@ -193,6 +313,12 @@ def _clear_box(container: Gtk.Widget) -> None:
         elif isinstance(container, Gtk.Box):
             container.remove(child)
         child = next_child
+
+
+def _apply_appearance(widget: Gtk.Widget, dark: bool) -> None:
+    widget.remove_css_class("restlos-light")
+    widget.remove_css_class("restlos-dark")
+    widget.add_css_class("restlos-dark" if dark else "restlos-light")
 
 
 def _icon_widget(icon: str, size: int = 40) -> Gtk.Image:
@@ -361,9 +487,26 @@ class MainWindow(Gtk.ApplicationWindow):
         self.set_size_request(840, 560)
         self.add_css_class("restlos-root")
         self._gtk_settings = Gtk.Settings.get_default()
+        self._desktop_settings: Gio.Settings | None = None
+        self._desktop_has_color_scheme = False
+        self._desktop_has_gtk_theme = False
         if self._gtk_settings is not None:
             self._gtk_settings.connect("notify::gtk-theme-name", self._sync_theme)
             self._gtk_settings.connect("notify::gtk-application-prefer-dark-theme", self._sync_theme)
+        schema_source = Gio.SettingsSchemaSource.get_default()
+        schema = (
+            schema_source.lookup("org.gnome.desktop.interface", True)
+            if schema_source is not None
+            else None
+        )
+        if schema is not None:
+            self._desktop_settings = Gio.Settings.new_full(schema, None, None)
+            self._desktop_has_color_scheme = schema.has_key("color-scheme")
+            self._desktop_has_gtk_theme = schema.has_key("gtk-theme")
+            if self._desktop_has_color_scheme:
+                self._desktop_settings.connect("changed::color-scheme", self._sync_theme)
+            if self._desktop_has_gtk_theme:
+                self._desktop_settings.connect("changed::gtk-theme", self._sync_theme)
         self._sync_theme()
         self.apps: list[AppRecord] = []
         self.current_app: AppRecord | None = None
@@ -378,16 +521,41 @@ class MainWindow(Gtk.ApplicationWindow):
         self._load_applications()
 
     def _sync_theme(self, *_args) -> None:
-        self.remove_css_class("restlos-light")
-        self.remove_css_class("restlos-dark")
         theme_name = ""
         prefer_dark = False
         if self._gtk_settings is not None:
             theme_name = str(self._gtk_settings.get_property("gtk-theme-name") or "")
             prefer_dark = bool(self._gtk_settings.get_property("gtk-application-prefer-dark-theme"))
         environment_theme = os.environ.get("GTK_THEME", "")
-        dark = prefer_dark or "dark" in theme_name.casefold() or "dark" in environment_theme.casefold()
-        self.add_css_class("restlos-dark" if dark else "restlos-light")
+        desktop_scheme = ""
+        desktop_theme = ""
+        if self._desktop_settings is not None:
+            if self._desktop_has_color_scheme:
+                desktop_scheme = self._desktop_settings.get_string("color-scheme")
+            if self._desktop_has_gtk_theme:
+                desktop_theme = self._desktop_settings.get_string("gtk-theme")
+        if environment_theme:
+            dark = "dark" in environment_theme.casefold()
+        else:
+            dark = (
+                prefer_dark
+                or "dark" in theme_name.casefold()
+                or "dark" in desktop_theme.casefold()
+                or desktop_scheme.casefold() == "prefer-dark"
+            )
+        self._dark_mode = dark
+        _apply_appearance(self, dark)
+        application = self.get_application()
+        windows = Gtk.Window.get_toplevels()
+        for index in range(windows.get_n_items()):
+            window = windows.get_item(index)
+            if isinstance(window, Gtk.Window) and (
+                window is self or (application is not None and window.get_application() is application)
+            ):
+                _apply_appearance(window, dark)
+
+    def _style_dialog(self, dialog: Gtk.Widget) -> None:
+        _apply_appearance(dialog, self._dark_mode)
 
     def _build_header(self) -> None:
         header = Gtk.HeaderBar()
@@ -939,6 +1107,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 buttons=Gtk.ButtonsType.CLOSE,
                 text=_("Ordner konnte nicht geöffnet werden"),
             )
+            self._style_dialog(dialog)
             dialog.set_property("secondary-text", _("Pfad: {path}\n\n{error}", path=path, error=error))
             dialog.connect("response", lambda item, _response: item.destroy())
             dialog.present()
@@ -952,6 +1121,7 @@ class MainWindow(Gtk.ApplicationWindow):
         app = self.current_app
         plan = self.current_plan
         dialog = Gtk.Dialog(title=_("Speicherorte – {name}", name=app.name), transient_for=self, modal=True)
+        self._style_dialog(dialog)
         dialog.set_default_size(800, 560)
         dialog.add_button(_("Schließen"), Gtk.ResponseType.CLOSE)
         dialog.connect("response", self._close_locations)
@@ -1100,6 +1270,7 @@ class MainWindow(Gtk.ApplicationWindow):
             text=_("„{name}“ wirklich restlos entfernen?", name=plan.app.name),
             secondary_text=secondary,
         )
+        self._style_dialog(dialog)
         dialog.add_button(_("Abbrechen"), Gtk.ResponseType.CANCEL)
         confirm = dialog.add_button(_("Endgültig entfernen") if permanent else _("Entfernen"), Gtk.ResponseType.ACCEPT)
         confirm.add_css_class("destructive-action")
@@ -1234,6 +1405,7 @@ class MainWindow(Gtk.ApplicationWindow):
             text=title,
             secondary_text=details,
         )
+        self._style_dialog(dialog)
         dialog.add_button(_("Schließen"), Gtk.ResponseType.CLOSE)
         if result.review_required:
             self.current_plan = None
@@ -1270,6 +1442,7 @@ class MainWindow(Gtk.ApplicationWindow):
             modal=True,
             title=_("Restlos-Wiederherstellungszentrum"),
         )
+        self._style_dialog(dialog)
         dialog.set_default_size(760, 520)
         dialog.add_button(_("Schließen"), Gtk.ResponseType.CLOSE)
         dialog.connect("response", self._close_recovery_center)
@@ -1435,6 +1608,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 size=format_size(record.available_size),
             ),
         )
+        self._style_dialog(dialog)
         dialog.add_button(_("Abbrechen"), Gtk.ResponseType.CANCEL)
         confirm = dialog.add_button(_("Wiederherstellen"), Gtk.ResponseType.ACCEPT)
         confirm.add_css_class("suggested-action")
@@ -1458,6 +1632,7 @@ class MainWindow(Gtk.ApplicationWindow):
             modal=True,
             title=_("Daten wiederherstellen"),
         )
+        self._style_dialog(progress)
         progress.set_deletable(False)
         area = progress.get_content_area()
         area.set_spacing(14)
@@ -1517,6 +1692,7 @@ class MainWindow(Gtk.ApplicationWindow):
             text=title,
             secondary_text=details,
         )
+        self._style_dialog(dialog)
         dialog.connect("response", lambda item, _response: item.destroy())
         dialog.present()
         if not self.busy:
@@ -1543,6 +1719,14 @@ class RestlosApplication(Gtk.Application):
             window = MainWindow(self)
         window.present()
         self._start_update_check(automatic=True)
+
+    def _style_dialog(self, dialog: Gtk.Widget) -> None:
+        parent = dialog.get_transient_for() if isinstance(dialog, Gtk.Window) else None
+        while isinstance(parent, Gtk.Window) and not isinstance(parent, MainWindow):
+            parent = parent.get_transient_for()
+        main = parent if isinstance(parent, MainWindow) else self.props.active_window
+        dark = isinstance(main, Gtk.Widget) and main.has_css_class("restlos-dark")
+        _apply_appearance(dialog, dark)
 
     def _add_actions(self) -> None:
         for name, callback in (
@@ -1579,6 +1763,7 @@ class RestlosApplication(Gtk.Application):
             copyright=_("2026 – lokale Open-Source-Ausgabe"),
             license_type=Gtk.License.MIT_X11,
         )
+        self._style_dialog(dialog)
         dialog.set_website(PROJECT_URL)
         dialog.set_website_label(_("Projektseite auf GitHub"))
         dialog.present()
@@ -1699,6 +1884,7 @@ class RestlosApplication(Gtk.Application):
             text=_("Restlos Uninstaller {version} ist verfügbar", version=release.version),
             secondary_text=details,
         )
+        self._style_dialog(dialog)
         dialog.add_button(_("Später"), Gtk.ResponseType.CANCEL)
         release_page = dialog.add_button(_("Release-Seite"), Gtk.ResponseType.HELP)
         if system_managed:
@@ -1731,6 +1917,7 @@ class RestlosApplication(Gtk.Application):
             modal=True,
             title=_("Restlos Uninstaller {version} installieren", version=release.version),
         )
+        self._style_dialog(dialog)
         dialog.set_deletable(False)
         content = dialog.get_content_area()
         content.set_spacing(14)
@@ -1814,6 +2001,7 @@ class RestlosApplication(Gtk.Application):
                 "damit die neue Version aktiv wird."
             ),
         )
+        self._style_dialog(dialog)
         dialog.add_button(_("Später neu starten"), Gtk.ResponseType.CLOSE)
         restart = dialog.add_button(_("Jetzt neu starten"), Gtk.ResponseType.ACCEPT)
         restart.add_css_class("suggested-action")
@@ -1845,6 +2033,7 @@ class RestlosApplication(Gtk.Application):
             text=title,
             secondary_text=details,
         )
+        self._style_dialog(dialog)
         dialog.connect("response", lambda item, _response: item.destroy())
         dialog.present()
 

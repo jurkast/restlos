@@ -47,6 +47,31 @@ class LocationGuiTests(unittest.TestCase):
             self.window.has_css_class("restlos-dark"),
         )
 
+    def test_air_appearance_switches_between_light_and_dark_system_themes(self) -> None:
+        self.window._gtk_settings = None
+        self.window._desktop_settings = None
+        with patch.dict("restlos.gui.os.environ", {"GTK_THEME": "Restlos-Dark"}):
+            self.window._sync_theme()
+        self.assertTrue(self.window.has_css_class("restlos-dark"))
+        self.assertFalse(self.window.has_css_class("restlos-light"))
+
+        with patch.dict("restlos.gui.os.environ", {"GTK_THEME": "Restlos-Light"}):
+            self.window._sync_theme()
+        self.assertTrue(self.window.has_css_class("restlos-light"))
+        self.assertFalse(self.window.has_css_class("restlos-dark"))
+
+    def test_air_appearance_is_applied_to_dialogs(self) -> None:
+        dialog = Gtk.Dialog(transient_for=self.window)
+        self.addCleanup(dialog.destroy)
+        self.window._dark_mode = True
+        self.window._style_dialog(dialog)
+        self.assertTrue(dialog.has_css_class("restlos-dark"))
+
+        self.window._dark_mode = False
+        self.window._style_dialog(dialog)
+        self.assertTrue(dialog.has_css_class("restlos-light"))
+        self.assertFalse(dialog.has_css_class("restlos-dark"))
+
     def test_target_folder_button_leaves_selection_unchanged(self) -> None:
         target = RemovalTarget(self.root, "Data", 0, Confidence.HIGH, False)
         changed, opened = Mock(), Mock()
