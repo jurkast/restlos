@@ -114,7 +114,9 @@ class LocationGuiTests(unittest.TestCase):
         self.assertEqual(self.window.detail_name.get_ellipsize(), Pango.EllipsizeMode.END)
         self.assertEqual(self.window.detail_id.get_ellipsize(), Pango.EllipsizeMode.END)
         for check in (self.window.permanent_check, self.window.backup_check, self.window.process_check):
-            label = check.get_child()
+            label = check.get_first_child()
+            while label is not None and not isinstance(label, Gtk.Label):
+                label = label.get_next_sibling()
             self.assertIsInstance(label, Gtk.Label)
             self.assertTrue(label.get_wrap())
 

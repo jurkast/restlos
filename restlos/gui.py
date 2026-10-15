@@ -332,12 +332,19 @@ def _icon_widget(icon: str, size: int = 40) -> Gtk.Image:
 
 
 def _wrapping_check_button(label: str) -> Gtk.CheckButton:
-    check = Gtk.CheckButton()
-    text = Gtk.Label(label=label, xalign=0)
-    text.set_hexpand(True)
-    text.set_wrap(True)
-    text.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
-    check.set_child(text)
+    # Gtk.CheckButton.set_child() is only available in newer GTK 4 releases.
+    # Ubuntu 22.04 ships GTK 4.6, whose built-in label is still reachable
+    # through the normal widget tree and can be configured for wrapping.
+    check = Gtk.CheckButton(label=label)
+    child = check.get_first_child()
+    while child is not None:
+        if isinstance(child, Gtk.Label):
+            child.set_hexpand(True)
+            child.set_xalign(0)
+            child.set_wrap(True)
+            child.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+            break
+        child = child.get_next_sibling()
     return check
 
 
